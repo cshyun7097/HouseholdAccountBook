@@ -7,4 +7,6 @@ public interface MemberService {
     void signUp(Member member);
 
     Member login(String id, String password);
+
+    boolean checkId(String id);
 }

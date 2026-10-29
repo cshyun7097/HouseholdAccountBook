@@ -9,11 +9,9 @@ import com.seunghyun.householdaccountbook.domain.member.service.MemberService;
 import com.seunghyun.householdaccountbook.global.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @Slf4j
@@ -34,6 +32,17 @@ public class MemberController {
                 .withDrawalStatus(WithDrawalStatus.ACTIVE)
                 .build());
         return ResponseEntity.ok("회원가입 완료핑");
+    }
+
+    @GetMapping("/id-check/{id}")
+    public ResponseEntity<?> idCheck(@PathVariable String id) {
+        log.info("아이디 체크 들어왔핑");
+        boolean isEmpty = memberService.checkId(id);
+        if (isEmpty) {
+            return ResponseEntity.ok("아이디 생성 가능");
+        } else {
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
+        }
     }
 
     @PostMapping("/login")

@@ -32,4 +32,10 @@ public class MemberServiceImpl implements MemberService {
 
         return member;
     }
+
+    @Override
+    public boolean checkId(String id) {
+        Optional<Member> member = memberRepository.findById(id);
+        return member.isEmpty();
+    }
 }
