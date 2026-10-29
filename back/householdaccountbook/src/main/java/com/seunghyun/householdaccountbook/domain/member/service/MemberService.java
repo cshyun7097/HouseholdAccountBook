@@ -9,4 +9,6 @@ public interface MemberService {
     Member login(String id, String password);
 
     boolean checkId(String id);
+
+    void updateMember(String id, String currentPassword, String phoneNumber, String password);
 }
