@@ -59,4 +59,10 @@ public class MemberController {
         memberService.updateMember(id, updateDto.getCurrentPassword(), updateDto.getPhoneNumber(), updateDto.getPassword());
         return ResponseEntity.ok("회원정보 수정 완료");
     }
+
+    @PatchMapping("/member/withdraw")
+    public ResponseEntity<?> withdraw(@AuthenticationPrincipal String id) {
+        memberService.withdraw(id);
+        return ResponseEntity.ok("회원탈퇴 완료");
+    }
 }

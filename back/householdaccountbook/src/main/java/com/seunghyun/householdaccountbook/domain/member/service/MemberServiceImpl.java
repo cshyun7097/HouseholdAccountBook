@@ -1,6 +1,7 @@
 package com.seunghyun.householdaccountbook.domain.member.service;
 
 import com.seunghyun.householdaccountbook.domain.member.entity.Member;
+import com.seunghyun.householdaccountbook.domain.member.entity.WithDrawalStatus;
 import com.seunghyun.householdaccountbook.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,10 @@ public class MemberServiceImpl implements MemberService {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
 
+        if (member.getWithDrawalStatus() != WithDrawalStatus.ACTIVE) {
+            throw new IllegalArgumentException("탈퇴한 회원입니다.");
+        }
+
         return member;
     }
 
@@ -57,5 +62,13 @@ public class MemberServiceImpl implements MemberService {
         if (password != null) {
             member.updatePassword(password);
         }
+    }
+
+    @Override
+    @Transactional
+    public void withdraw(String id) {
+        Member member = memberRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아이디입니다."));
+        member.setWithDrawalStatus(WithDrawalStatus.INACTIVE);
     }
 }

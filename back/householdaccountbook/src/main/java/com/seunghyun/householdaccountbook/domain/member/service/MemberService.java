@@ -10,5 +10,7 @@ public interface MemberService {
 
     boolean checkId(String id);
 
+    void withdraw(String id);
+
     void updateMember(String id, String currentPassword, String phoneNumber, String password);
 }
