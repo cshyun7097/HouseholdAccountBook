@@ -50,4 +50,12 @@ public class AccountServiceImpl implements AccountService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 계좌입니다."));
         account.setBalance(balance);
     }
+
+    @Override
+    @Transactional
+    public void deleteAccount(String id, Long accountId) {
+        Account account = accountRepository.findByAccountIdAndMember_Id(accountId, id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 계좌입니다."));
+        accountRepository.delete(account);
+    }
 }

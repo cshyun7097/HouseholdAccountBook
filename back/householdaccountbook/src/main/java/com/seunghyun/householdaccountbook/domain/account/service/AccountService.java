@@ -11,4 +11,6 @@ public interface AccountService {
     List<Account> getAccounts(String id);
 
     void updateBalance(String id, Long accountId, Long balance);
+
+    void deleteAccount(String id, Long accountId);
 }

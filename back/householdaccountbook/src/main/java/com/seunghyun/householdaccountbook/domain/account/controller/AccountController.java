@@ -52,4 +52,11 @@ public class AccountController {
         accountService.updateBalance(id, updateDto.getAccountId(), updateDto.getBalance());
         return ResponseEntity.ok("잔액 설정 완료");
     }
+
+    @DeleteMapping("/account/delete/{accountId}")
+    public ResponseEntity<?> deleteAccount(@AuthenticationPrincipal String id,
+                                           @PathVariable Long accountId) {
+        accountService.deleteAccount(id, accountId);
+        return ResponseEntity.ok("계좌 삭제 완료");
+    }
 }
