@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -30,5 +32,27 @@ public class CategoryServiceImpl implements CategoryService {
 
         category.setMember(member);
         categoryRepository.save(category);
+    }
+
+    @Override
+    public List<Category> getCategories(String id) {
+        return categoryRepository.findAllByMember_Id(id);
+    }
+
+    @Override
+    @Transactional
+    public void updateCategory(String id, Long categoryId, String categoryName) {
+        // 본인 카테고리만 조회해서 남의 카테고리 수정을 막는다
+        Category category = categoryRepository.findByCategoryIdAndMember_Id(categoryId, id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다."));
+        category.setCategoryName(categoryName);
+    }
+
+    @Override
+    @Transactional
+    public void deleteCategory(String id, Long categoryId) {
+        Category category = categoryRepository.findByCategoryIdAndMember_Id(categoryId, id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다."));
+        categoryRepository.delete(category);
     }
 }
