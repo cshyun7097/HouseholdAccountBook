@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -33,5 +35,19 @@ public class AccountServiceImpl implements AccountService {
 
         account.setMember(member);
         accountRepository.save(account);
+    }
+
+    @Override
+    public List<Account> getAccounts(String id) {
+        return accountRepository.findAllByMember_Id(id);
+    }
+
+    @Override
+    @Transactional
+    public void updateBalance(String id, Long accountId, Long balance) {
+        // 본인 계좌만 조회해서 남의 계좌 잔액 변경을 막는다
+        Account account = accountRepository.findByAccountIdAndMember_Id(accountId, id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 계좌입니다."));
+        account.setBalance(balance);
     }
 }
