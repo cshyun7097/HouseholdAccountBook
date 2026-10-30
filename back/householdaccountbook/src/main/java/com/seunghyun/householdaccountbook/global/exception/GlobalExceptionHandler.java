@@ -8,6 +8,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.Map;
 import java.util.Objects;
@@ -24,6 +25,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<?> handleNotReadable(HttpMessageNotReadableException e) {
         return toResponse(HttpStatus.BAD_REQUEST, "요청 본문 형식이 올바르지 않습니다.");
+    }
+
+    // 날짜 형식이 틀리거나 page에 숫자가 아닌 값이 들어온 경우
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<?> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+        return toResponse(HttpStatus.BAD_REQUEST, e.getName() + " 값의 형식이 올바르지 않습니다.");
     }
 
     @ExceptionHandler(Exception.class)
