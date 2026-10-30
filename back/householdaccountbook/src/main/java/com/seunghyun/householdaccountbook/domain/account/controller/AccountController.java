@@ -46,10 +46,11 @@ public class AccountController {
         return ResponseEntity.ok(accounts);
     }
 
-    @PatchMapping("/account/update-balance")
+    @PatchMapping("/account/update-balance/{accountId}")
     public ResponseEntity<?> updateBalance(@AuthenticationPrincipal String id,
+                                           @PathVariable Long accountId,
                                            @RequestBody UpdateBalanceRequestDto updateDto) {
-        accountService.updateBalance(id, updateDto.getAccountId(), updateDto.getBalance());
+        accountService.updateBalance(id, accountId, updateDto.getBalance());
         return ResponseEntity.ok("잔액 설정 완료");
     }
 

@@ -7,6 +7,5 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateBalanceRequestDto {
-    private Long accountId;
     private Long balance;
 }
