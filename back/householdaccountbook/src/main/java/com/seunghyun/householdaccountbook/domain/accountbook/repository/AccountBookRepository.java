@@ -26,4 +26,6 @@ public interface AccountBookRepository extends JpaRepository<AccountBook, Long> 
     Page<AccountBook> findAllByMember_IdAndAccount_AccountIdAndDateBetween(String id, Long accountId, LocalDate startDate, LocalDate endDate, Pageable pageable);
 
     Optional<AccountBook> findByAccountBookIdAndMember_Id(Long accountBookId, String id);
+
+    boolean existsByAccount_AccountId(Long accountId);
 }
