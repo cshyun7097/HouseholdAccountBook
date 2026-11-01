@@ -19,6 +19,9 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public void signUp(Member member) {
+        if (!checkId(member.getId())) {
+            throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
+        }
         member.updatePassword(member.getPassword());
         memberRepository.save(member);
     }

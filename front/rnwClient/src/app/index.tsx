@@ -1,61 +1,88 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
+import { ApiError } from '@/api/client';
+import { login } from '@/api/member';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+export default function LoginScreen() {
+  const theme = useTheme();
+  const [id, setId] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-export default function HomeScreen() {
+  async function onLogin() {
+    if (!id || !password) return setError('아이디와 비밀번호를 입력해주세요.');
+    setError('');
+    setLoading(true);
+    try {
+      await login(id, password);
+      router.replace('/home');
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : '서버에 연결할 수 없습니다.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const inputStyle = [styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }];
+
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
+      <SafeAreaView style={styles.form}>
+        <ThemedText type="subtitle" style={styles.title}>
+          로그인
         </ThemedText>
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+        <TextInput
+          style={inputStyle}
+          placeholder="아이디"
+          placeholderTextColor={theme.textSecondary}
+          autoCapitalize="none"
+          autoCorrect={false}
+          value={id}
+          onChangeText={setId}
+        />
+        <TextInput
+          style={inputStyle}
+          placeholder="비밀번호"
+          placeholderTextColor={theme.textSecondary}
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+          onSubmitEditing={onLogin}
+        />
 
-        {Platform.OS === 'web' && <WebBadge />}
+        {!!error && <ThemedText type="small" style={styles.error}>{error}</ThemedText>}
+
+        <Pressable
+          accessibilityRole="button"
+          disabled={loading}
+          onPress={onLogin}
+          style={({ pressed }) => [styles.button, { backgroundColor: theme.text }, (pressed || loading) && styles.pressed]}>
+          <ThemedText style={{ color: theme.background }}>{loading ? '로그인 중...' : '로그인'}</ThemedText>
+        </Pressable>
+
+        {/* shortcut: find-id / find-password screens don't exist yet; wire router.push once they do */}
+        <ThemedView style={styles.links}>
+          <Pressable accessibilityRole="button" onPress={() => {}}>
+            <ThemedText type="small" themeColor="textSecondary">아이디 찾기</ThemedText>
+          </Pressable>
+          <ThemedText type="small" themeColor="textSecondary">|</ThemedText>
+          <Pressable accessibilityRole="button" onPress={() => {}}>
+            <ThemedText type="small" themeColor="textSecondary">비밀번호 찾기</ThemedText>
+          </Pressable>
+          <ThemedText type="small" themeColor="textSecondary">|</ThemedText>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/sign-up')}>
+            <ThemedText type="small" themeColor="textSecondary">회원가입</ThemedText>
+          </Pressable>
+        </ThemedView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -64,35 +91,40 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  form: {
+    width: '100%',
+    maxWidth: 400,
+    paddingHorizontal: Spacing.four,
     gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
   },
   title: {
     textAlign: 'center',
+    marginBottom: Spacing.three,
   },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
+  input: {
+    height: 48,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+    borderRadius: Spacing.two,
+    fontSize: 16,
+  },
+  error: {
+    color: '#e5484d',
+  },
+  button: {
+    height: 48,
+    borderRadius: Spacing.two,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pressed: {
+    opacity: 0.7,
+  },
+  links: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.two,
   },
 });

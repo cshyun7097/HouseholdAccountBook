@@ -24,7 +24,8 @@ public class Member {
     @Column(nullable = false)
     private String phoneNumber;
 
-    @Column(nullable = false)
+    // unique: 동시에 같은 아이디로 가입하는 경우까지 DB에서 막는다
+    @Column(nullable = false, unique = true)
     private String id;
 
     @Column(nullable = false)

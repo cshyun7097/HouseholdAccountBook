@@ -4,7 +4,7 @@ import { getToken } from '@/api/token';
 
 // In dev, reach the backend on the same machine that serves Metro, so emulators and real devices both work.
 const devHost = Constants.expoConfig?.hostUri?.split(':')[0] ?? 'localhost';
-export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? `http://${devHost}:8080`;
+export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? `http://${devHost}:8080/api`;
 
 // Mirrors the backend GlobalExceptionHandler body: { status, error, message }
 export class ApiError extends Error {
