@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -46,6 +47,31 @@ public class MemberServiceImpl implements MemberService {
     public boolean checkId(String id) {
         Optional<Member> member = memberRepository.findById(id);
         return member.isEmpty();
+    }
+
+    @Override
+    public List<String> findIds(String name, String phoneNumber) {
+        List<String> ids = memberRepository
+                .findAllByNameAndPhoneNumberAndWithDrawalStatus(name, phoneNumber, WithDrawalStatus.ACTIVE)
+                .stream().map(Member::getId).toList();
+        if (ids.isEmpty()) {
+            throw new IllegalArgumentException("일치하는 회원이 없습니다.");
+        }
+        return ids;
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(String id, String name, String phoneNumber, String newPassword) {
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new IllegalArgumentException("새 비밀번호를 입력해주세요.");
+        }
+        // 어느 항목이 틀렸는지 알려주지 않아야 아이디 존재 여부가 드러나지 않는다
+        Member member = memberRepository.findById(id)
+                .filter(m -> m.getName().equals(name) && m.getPhoneNumber().equals(phoneNumber)
+                        && m.getWithDrawalStatus() == WithDrawalStatus.ACTIVE)
+                .orElseThrow(() -> new IllegalArgumentException("일치하는 회원이 없습니다."));
+        member.updatePassword(newPassword);
     }
 
     @Override

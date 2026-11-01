@@ -69,13 +69,12 @@ export default function LoginScreen() {
           <ThemedText style={{ color: theme.background }}>{loading ? '로그인 중...' : '로그인'}</ThemedText>
         </Pressable>
 
-        {/* shortcut: find-id / find-password screens don't exist yet; wire router.push once they do */}
         <ThemedView style={styles.links}>
-          <Pressable accessibilityRole="button" onPress={() => {}}>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/find-id')}>
             <ThemedText type="small" themeColor="textSecondary">아이디 찾기</ThemedText>
           </Pressable>
           <ThemedText type="small" themeColor="textSecondary">|</ThemedText>
-          <Pressable accessibilityRole="button" onPress={() => {}}>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/find-password')}>
             <ThemedText type="small" themeColor="textSecondary">비밀번호 찾기</ThemedText>
           </Pressable>
           <ThemedText type="small" themeColor="textSecondary">|</ThemedText>

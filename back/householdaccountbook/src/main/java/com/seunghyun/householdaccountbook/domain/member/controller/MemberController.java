@@ -1,8 +1,11 @@
 package com.seunghyun.householdaccountbook.domain.member.controller;
 
+import com.seunghyun.householdaccountbook.domain.member.dto.request.FindIdRequestDto;
 import com.seunghyun.householdaccountbook.domain.member.dto.request.LoginRequestDto;
+import com.seunghyun.householdaccountbook.domain.member.dto.request.ResetPasswordRequestDto;
 import com.seunghyun.householdaccountbook.domain.member.dto.request.SignUpRequestDto;
 import com.seunghyun.householdaccountbook.domain.member.dto.request.UpdateMemberRequestDto;
+import com.seunghyun.householdaccountbook.domain.member.dto.response.FindIdResponseDto;
 import com.seunghyun.householdaccountbook.domain.member.dto.response.LoginResponseDto;
 import com.seunghyun.householdaccountbook.domain.member.entity.Member;
 import com.seunghyun.householdaccountbook.domain.member.entity.WithDrawalStatus;
@@ -51,6 +54,20 @@ public class MemberController {
         Member member = memberService.login(loginDto.getId(), loginDto.getPassword());
         String token = jwtTokenProvider.generateToken(member.getId());
         return ResponseEntity.ok(LoginResponseDto.builder().token(token).build());
+    }
+
+    // 휴대폰번호가 URL/로그에 남지 않도록 POST body로 받는다
+    @PostMapping("/member/find-id")
+    public ResponseEntity<?> findId(@RequestBody FindIdRequestDto findIdDto) {
+        return ResponseEntity.ok(FindIdResponseDto.builder()
+                .ids(memberService.findIds(findIdDto.getName(), findIdDto.getPhoneNumber()))
+                .build());
+    }
+
+    @PatchMapping("/member/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequestDto resetDto) {
+        memberService.resetPassword(resetDto.getId(), resetDto.getName(), resetDto.getPhoneNumber(), resetDto.getNewPassword());
+        return ResponseEntity.ok("비밀번호 재설정 완료");
     }
 
     @PatchMapping("/member/update")

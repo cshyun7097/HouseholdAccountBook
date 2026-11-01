@@ -14,6 +14,12 @@ export async function login(id: string, password: string) {
   await setToken(token);
 }
 
+export const findId = async (name: string, phoneNumber: string) =>
+  (await post<{ ids: string[] }>('/member/find-id', { name, phoneNumber })).ids;
+
+export type ResetPasswordRequest = { id: string; name: string; phoneNumber: string; newPassword: string };
+export const resetPassword = (data: ResetPasswordRequest) => patch<string>('/member/reset-password', data);
+
 export const logout = clearToken;
 
 export const updateMember = (data: UpdateMemberRequest) => patch<string>('/member/update', data);
