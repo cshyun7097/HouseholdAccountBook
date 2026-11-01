@@ -68,7 +68,7 @@ export default function WriteScreen() {
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen options={{ headerShown: true, title: '가계부 작성' }} />
-      <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
         <ThemedView style={styles.chips}>
           <Chip label="지출" selected={type === 'EXPENSE'} onPress={() => setType('EXPENSE')} />
           <Chip label="수입" selected={type === 'INCOME'} onPress={() => setType('INCOME')} />
@@ -159,9 +159,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
-  form: {
+  // the centered container would otherwise shrink the ScrollView to its content's width on web
+  scroll: {
     width: '100%',
     maxWidth: 600,
+  },
+  form: {
     padding: Spacing.four,
     gap: Spacing.three,
   },

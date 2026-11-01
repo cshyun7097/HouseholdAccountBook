@@ -1,10 +1,12 @@
 package com.seunghyun.householdaccountbook.domain.accountbook.service;
 
+import com.seunghyun.householdaccountbook.domain.accountbook.dto.response.DashboardResponseDto;
 import com.seunghyun.householdaccountbook.domain.accountbook.entity.AccountBook;
 import com.seunghyun.householdaccountbook.domain.accountbook.entity.AccountBookType;
 import org.springframework.data.domain.Page;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 
 public interface AccountBookService {
 
@@ -21,4 +23,6 @@ public interface AccountBookService {
     void updateAccountBook(String id, Long accountBookId, Long categoryId, String content, Long price, AccountBookType type);
 
     void deleteAccountBook(String id, Long accountBookId);
+
+    DashboardResponseDto getDashboard(String id, YearMonth month);
 }

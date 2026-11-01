@@ -24,3 +24,10 @@ export const getAccountBooks = (page: number, accountId?: number) =>
 // The backend stamps the date as today.
 export type AddAccountBookRequest = Pick<AccountBook, 'content' | 'price' | 'type' | 'categoryId' | 'accountId'>;
 export const addAccountBook = (data: AddAccountBookRequest) => post<string>('/accountbook/add', data);
+
+export type Dashboard = {
+  month: string; // yyyy-MM
+  monthly: { month: string; income: number; expense: number }[]; // last 6 months, oldest first
+  categories: { categoryName: string; total: number }[]; // this month's expenses, largest first
+};
+export const getDashboard = () => get<Dashboard>('/accountbook/dashboard');

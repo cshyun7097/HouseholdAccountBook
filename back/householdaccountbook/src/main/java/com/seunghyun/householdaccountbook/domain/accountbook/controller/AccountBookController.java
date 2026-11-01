@@ -14,6 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 
 @RestController
 @Slf4j
@@ -70,6 +71,11 @@ public class AccountBookController {
         PagedModel<AccountBookResponseDto> accountBooks = new PagedModel<>(accountBookService.getAccountBooksByAccountAndDate(id, accountId, startDate, endDate, page)
                 .map(this::toResponse));
         return ResponseEntity.ok(accountBooks);
+    }
+
+    @GetMapping("/accountbook/dashboard")
+    public ResponseEntity<?> getDashboard(@AuthenticationPrincipal String id) {
+        return ResponseEntity.ok(accountBookService.getDashboard(id, YearMonth.now()));
     }
 
     @PatchMapping("/accountbook/update/{accountBookId}")

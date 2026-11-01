@@ -39,7 +39,7 @@ export default function AddAccountScreen() {
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen options={{ headerShown: true, title: '통장 추가' }} />
-      <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
         <TextInput
           style={inputStyle}
           placeholder="통장 이름 (예: 월급통장)"
@@ -91,9 +91,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
-  form: {
+  // the centered container would otherwise shrink the ScrollView to its content's width on web
+  scroll: {
     width: '100%',
     maxWidth: 400,
+  },
+  form: {
     padding: Spacing.four,
     gap: Spacing.three,
   },

@@ -8,12 +8,18 @@ import com.seunghyun.householdaccountbook.domain.accountbook.repository.AccountB
 import com.seunghyun.householdaccountbook.domain.category.entity.Category;
 import com.seunghyun.householdaccountbook.domain.category.repository.CategoryRepository;
 import com.seunghyun.householdaccountbook.domain.member.repository.MemberRepository;
+import com.seunghyun.householdaccountbook.domain.accountbook.dto.response.CategoryTotal;
+import com.seunghyun.householdaccountbook.domain.accountbook.dto.response.DashboardResponseDto;
+import com.seunghyun.householdaccountbook.domain.accountbook.dto.response.MonthlyTotal;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -87,5 +93,28 @@ class AccountBookServiceImplTest {
 
         assertThrows(IllegalArgumentException.class, () -> accountBookService.addAccountBook("user", 2L, 10L, accountBook));
         verify(accountBookRepository, never()).save(any());
+    }
+
+    @Test
+    void 대시보드는_최근_6개월을_빈_달까지_채워서_오래된_순으로_준다() {
+        when(accountBookRepository.sumByMonthAndType("user", LocalDate.of(2026, 6, 1), LocalDate.of(2026, 11, 30)))
+                .thenReturn(List.of(
+                        new MonthlyTotal(2026, 11, AccountBookType.EXPENSE, 9000L),
+                        new MonthlyTotal(2026, 11, AccountBookType.INCOME, 50000L),
+                        new MonthlyTotal(2026, 7, AccountBookType.EXPENSE, 3000L)));
+        when(accountBookRepository.sumByCategory("user", AccountBookType.EXPENSE, LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30)))
+                .thenReturn(List.of(new CategoryTotal("식비", 9000L)));
+
+        DashboardResponseDto dashboard = accountBookService.getDashboard("user", YearMonth.of(2026, 11));
+
+        assertEquals(List.of(
+                new DashboardResponseDto.MonthlySummary("2026-06", 0, 0),
+                new DashboardResponseDto.MonthlySummary("2026-07", 0, 3000),
+                new DashboardResponseDto.MonthlySummary("2026-08", 0, 0),
+                new DashboardResponseDto.MonthlySummary("2026-09", 0, 0),
+                new DashboardResponseDto.MonthlySummary("2026-10", 0, 0),
+                new DashboardResponseDto.MonthlySummary("2026-11", 50000, 9000)), dashboard.getMonthly());
+        assertEquals("2026-11", dashboard.getMonth());
+        assertEquals(List.of(new CategoryTotal("식비", 9000L)), dashboard.getCategories());
     }
 }

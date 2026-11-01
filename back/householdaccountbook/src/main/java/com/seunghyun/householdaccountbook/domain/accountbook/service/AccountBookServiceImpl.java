@@ -2,6 +2,8 @@ package com.seunghyun.householdaccountbook.domain.accountbook.service;
 
 import com.seunghyun.householdaccountbook.domain.account.entity.Account;
 import com.seunghyun.householdaccountbook.domain.account.repository.AccountRepository;
+import com.seunghyun.householdaccountbook.domain.accountbook.dto.response.DashboardResponseDto;
+import com.seunghyun.householdaccountbook.domain.accountbook.dto.response.MonthlyTotal;
 import com.seunghyun.householdaccountbook.domain.accountbook.entity.AccountBook;
 import com.seunghyun.householdaccountbook.domain.accountbook.entity.AccountBookType;
 import com.seunghyun.householdaccountbook.domain.accountbook.repository.AccountBookRepository;
@@ -19,6 +21,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -26,6 +32,8 @@ import java.time.LocalDate;
 public class AccountBookServiceImpl implements AccountBookService {
 
     private static final int PAGE_SIZE = 20;
+
+    private static final int DASHBOARD_MONTHS = 6;
     // 최신 날짜순, 같은 날짜는 최근 등록순
     private static final Sort SORT = Sort.by(Sort.Direction.DESC, "date", "accountBookId");
 
@@ -127,5 +135,30 @@ public class AccountBookServiceImpl implements AccountBookService {
         if (accountRepository.changeBalance(accountId, amount) == 0) {
             throw new IllegalArgumentException("잔액이 부족합니다.");
         }
+    }
+
+    @Override
+    public DashboardResponseDto getDashboard(String id, YearMonth month) {
+        YearMonth firstMonth = month.minusMonths(DASHBOARD_MONTHS - 1);
+
+        // 내역이 없는 달도 0으로 보여주기 위해 6개월을 미리 채워둔다 ([수입, 지출])
+        Map<YearMonth, long[]> sums = new LinkedHashMap<>();
+        for (int i = 0; i < DASHBOARD_MONTHS; i++) {
+            sums.put(firstMonth.plusMonths(i), new long[2]);
+        }
+        for (MonthlyTotal total : accountBookRepository.sumByMonthAndType(id, firstMonth.atDay(1), month.atEndOfMonth())) {
+            long[] sum = sums.get(YearMonth.of(total.year(), total.month()));
+            sum[total.type() == AccountBookType.INCOME ? 0 : 1] += total.total();
+        }
+
+        List<DashboardResponseDto.MonthlySummary> monthly = sums.entrySet().stream()
+                .map(e -> new DashboardResponseDto.MonthlySummary(e.getKey().toString(), e.getValue()[0], e.getValue()[1]))
+                .toList();
+
+        return DashboardResponseDto.builder()
+                .month(month.toString())
+                .monthly(monthly)
+                .categories(accountBookRepository.sumByCategory(id, AccountBookType.EXPENSE, month.atDay(1), month.atEndOfMonth()))
+                .build();
     }
 }
