@@ -55,7 +55,7 @@ export default function AccountDetailScreen() {
     if (!account) return;
     run(async () => {
       await deleteAccount(account.accountId);
-      router.back();
+      router.dismissTo('/account-settings');
     });
   }
 

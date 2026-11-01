@@ -1,11 +1,12 @@
-import { type Href, router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { type Href, router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { FlatList, Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { type Account, getAccounts } from '@/api/account';
 import { type AccountBook, getAccountBooks } from '@/api/accountbook';
 import { authedErrorMessage } from '@/api/auth-error';
+import { Chip } from '@/components/chip';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -15,6 +16,7 @@ const MENU: { label: string; href: Href }[] = [
   { label: '대시보드', href: '/dashboard' },
   { label: '마이페이지', href: '/mypage' },
   { label: '통장설정', href: '/account-settings' },
+  { label: '카테고리', href: '/categories' },
 ];
 
 export default function HomeScreen() {
@@ -32,29 +34,34 @@ export default function HomeScreen() {
     setError((await authedErrorMessage(e)) ?? '');
   }
 
-  useEffect(() => {
-    getAccounts().then(setAccounts).catch(handleError);
-  }, []);
+  // Reload on focus too, so entries and accounts added on other screens show up on return.
+  useFocusEffect(
+    useCallback(() => {
+      getAccounts().then(setAccounts).catch(handleError);
+    }, []),
+  );
 
-  useEffect(() => {
-    let ignore = false; // drop responses for an account the user already switched away from
-    getAccountBooks(0, accountId)
-      .then((res) => {
-        if (ignore) return;
-        setItems(res.content);
-        setPage(0);
-        setHasMore(res.page.totalPages > 1);
-      })
-      .catch((e) => {
-        if (!ignore) handleError(e);
-      })
-      .finally(() => {
-        if (!ignore) setLoading(false);
-      });
-    return () => {
-      ignore = true;
-    };
-  }, [accountId]);
+  useFocusEffect(
+    useCallback(() => {
+      let ignore = false; // drop responses for an account the user already switched away from
+      getAccountBooks(0, accountId)
+        .then((res) => {
+          if (ignore) return;
+          setItems(res.content);
+          setPage(0);
+          setHasMore(res.page.totalPages > 1);
+        })
+        .catch((e) => {
+          if (!ignore) handleError(e);
+        })
+        .finally(() => {
+          if (!ignore) setLoading(false);
+        });
+      return () => {
+        ignore = true;
+      };
+    }, [accountId]),
+  );
 
   function selectAccount(id: number | undefined) {
     if (id === accountId) return;
@@ -92,11 +99,7 @@ export default function HomeScreen() {
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipBar} contentContainerStyle={styles.chips}>
           {chips.map((c) => (
-            <Pressable key={c.id ?? 'all'} accessibilityRole="button" accessibilityState={{ selected: c.id === accountId }} onPress={() => selectAccount(c.id)}>
-              <ThemedView type={c.id === accountId ? 'backgroundSelected' : 'backgroundElement'} style={styles.chip}>
-                <ThemedText type="small" themeColor={c.id === accountId ? 'text' : 'textSecondary'}>{c.name}</ThemedText>
-              </ThemedView>
-            </Pressable>
+            <Chip key={c.id ?? 'all'} label={c.name} selected={c.id === accountId} onPress={() => selectAccount(c.id)} />
           ))}
         </ScrollView>
 
@@ -128,10 +131,9 @@ export default function HomeScreen() {
           )}
         />
 
-        {/* shortcut: write screen doesn't exist yet; wire router.push once it does */}
         <Pressable
           accessibilityRole="button"
-          onPress={() => {}}
+          onPress={() => router.push('/write')}
           style={({ pressed }) => [styles.button, { backgroundColor: theme.text }, pressed && styles.pressed]}>
           <ThemedText style={{ color: theme.background }}>가계부 작성</ThemedText>
         </Pressable>
@@ -186,11 +188,6 @@ const styles = StyleSheet.create({
   chips: {
     gap: Spacing.two,
     paddingVertical: Spacing.two,
-  },
-  chip: {
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
   },
   error: {
     color: '#e5484d',

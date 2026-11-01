@@ -1,4 +1,4 @@
-import { get } from '@/api/client';
+import { get, post } from '@/api/client';
 
 export type AccountBook = {
   accountBookId: number;
@@ -20,3 +20,7 @@ export type Page<T> = {
 // accountId omitted = every account
 export const getAccountBooks = (page: number, accountId?: number) =>
   get<Page<AccountBook>>(`/accountbook/get${accountId ? `/${accountId}` : ''}?page=${page}`);
+
+// The backend stamps the date as today.
+export type AddAccountBookRequest = Pick<AccountBook, 'content' | 'price' | 'type' | 'categoryId' | 'accountId'>;
+export const addAccountBook = (data: AddAccountBookRequest) => post<string>('/accountbook/add', data);

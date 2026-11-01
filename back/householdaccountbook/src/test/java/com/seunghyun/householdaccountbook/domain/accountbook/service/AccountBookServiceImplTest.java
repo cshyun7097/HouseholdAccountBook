@@ -18,6 +18,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
@@ -78,5 +79,13 @@ class AccountBookServiceImplTest {
         assertThrows(IllegalArgumentException.class, () ->
                 accountBookService.updateAccountBook("user", 1L, 2L, "월급", 0L, AccountBookType.INCOME));
         assertEquals(1000L, accountBook.getPrice());
+    }
+
+    @Test
+    void 금액이_0이하면_가계부를_추가하지_않는다() {
+        AccountBook accountBook = AccountBook.builder().content("점심").price(-1000L).type(AccountBookType.EXPENSE).build();
+
+        assertThrows(IllegalArgumentException.class, () -> accountBookService.addAccountBook("user", 2L, 10L, accountBook));
+        verify(accountBookRepository, never()).save(any());
     }
 }

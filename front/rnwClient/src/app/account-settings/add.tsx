@@ -26,7 +26,7 @@ export default function AddAccountScreen() {
     setLoading(true);
     try {
       await createAccount({ accountName, bankInfo, accountNumber, balance: amount });
-      router.back();
+      router.dismissTo('/account-settings');
     } catch (e) {
       setError((await authedErrorMessage(e)) ?? '');
     } finally {

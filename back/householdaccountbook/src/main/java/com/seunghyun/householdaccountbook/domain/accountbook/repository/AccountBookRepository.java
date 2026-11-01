@@ -28,4 +28,6 @@ public interface AccountBookRepository extends JpaRepository<AccountBook, Long> 
     Optional<AccountBook> findByAccountBookIdAndMember_Id(Long accountBookId, String id);
 
     boolean existsByAccount_AccountId(Long accountId);
+
+    boolean existsByCategory_CategoryId(Long categoryId);
 }

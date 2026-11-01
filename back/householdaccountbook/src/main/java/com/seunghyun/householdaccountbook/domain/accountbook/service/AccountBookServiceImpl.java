@@ -37,6 +37,11 @@ public class AccountBookServiceImpl implements AccountBookService {
     @Override
     @Transactional
     public void addAccountBook(String id, Long categoryId, Long accountId, AccountBook accountBook) {
+        // 음수 금액은 잔액 계산을 뒤집으므로 막는다
+        if (accountBook.getContent() == null || accountBook.getContent().isBlank()
+                || accountBook.getPrice() == null || accountBook.getPrice() <= 0 || accountBook.getType() == null) {
+            throw new IllegalArgumentException("내용, 0보다 큰 금액, 수입/지출을 모두 입력해주세요.");
+        }
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아이디입니다."));
 
