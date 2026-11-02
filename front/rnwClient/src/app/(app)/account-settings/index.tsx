@@ -1,10 +1,11 @@
-import { router, Stack, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { type Account, getAccounts } from '@/api/account';
 import { authedErrorMessage } from '@/api/auth-error';
+import { AppHeader } from '@/components/app-menu';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -41,7 +42,7 @@ export default function AccountSettingsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <Stack.Screen options={{ headerShown: true, title: '통장설정' }} />
+      <AppHeader title="통장설정" />
       <SafeAreaView edges={['bottom']} style={styles.safeArea}>
         {/* the list API already returns every balance, so the total needs no backend call */}
         <ThemedView type="backgroundElement" style={styles.total}>

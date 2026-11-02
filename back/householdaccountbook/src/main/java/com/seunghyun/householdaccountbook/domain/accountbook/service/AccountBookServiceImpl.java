@@ -85,11 +85,13 @@ public class AccountBookServiceImpl implements AccountBookService {
 
     @Override
     public Page<AccountBook> getAccountBooksByDate(String id, LocalDate startDate, LocalDate endDate, int page) {
+        validateRange(startDate, endDate);
         return accountBookRepository.findAllByMember_IdAndDateBetween(id, startDate, endDate, PageRequest.of(page, PAGE_SIZE, SORT));
     }
 
     @Override
     public Page<AccountBook> getAccountBooksByAccountAndDate(String id, Long accountId, LocalDate startDate, LocalDate endDate, int page) {
+        validateRange(startDate, endDate);
         // 회원 조건을 같이 걸어서 남의 계좌 내역은 조회되지 않는다
         return accountBookRepository.findAllByMember_IdAndAccount_AccountIdAndDateBetween(id, accountId, startDate, endDate, PageRequest.of(page, PAGE_SIZE, SORT));
     }
@@ -160,5 +162,15 @@ public class AccountBookServiceImpl implements AccountBookService {
                 .monthly(monthly)
                 .categories(accountBookRepository.sumByCategory(id, AccountBookType.EXPENSE, month.atDay(1), month.atEndOfMonth()))
                 .build();
+    }
+
+    // 조회 기간은 최대 1개월: 종료일은 시작일 + 1개월까지 (1/31 + 1개월 = 2/28, plusMonths가 말일로 맞춘다)
+    private static void validateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("시작일이 종료일보다 늦습니다.");
+        }
+        if (endDate.isAfter(startDate.plusMonths(1))) {
+            throw new IllegalArgumentException("조회 기간은 최대 1개월입니다.");
+        }
     }
 }

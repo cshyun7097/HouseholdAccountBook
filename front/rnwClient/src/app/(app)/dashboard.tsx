@@ -1,10 +1,11 @@
-import { Stack, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { type Dashboard, getDashboard } from '@/api/accountbook';
 import { authedErrorMessage } from '@/api/auth-error';
+import { AppHeader } from '@/components/app-menu';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ChartColors, Spacing } from '@/constants/theme';
@@ -46,11 +47,13 @@ export default function DashboardScreen() {
 
   if (!data) {
     return (
-      <ThemedView style={styles.center}>
-        <Stack.Screen options={{ headerShown: true, title: '대시보드' }} />
-        <ThemedText type="small" style={error ? styles.error : undefined} themeColor="textSecondary">
-          {error || '불러오는 중...'}
-        </ThemedText>
+      <ThemedView style={styles.container}>
+        <AppHeader title="대시보드" />
+        <ThemedView style={styles.center}>
+          <ThemedText type="small" style={error ? styles.error : undefined} themeColor="textSecondary">
+            {error || '불러오는 중...'}
+          </ThemedText>
+        </ThemedView>
       </ThemedView>
     );
   }
@@ -69,7 +72,7 @@ export default function DashboardScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <Stack.Screen options={{ headerShown: true, title: '대시보드' }} />
+      <AppHeader title="대시보드" />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {!!error && <ThemedText type="small" style={styles.error}>{error}</ThemedText>}
 

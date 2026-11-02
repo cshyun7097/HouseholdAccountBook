@@ -1,29 +1,23 @@
-import { type Href, router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { type Account, getAccounts } from '@/api/account';
 import { type AccountBook, type DateRange, getAccountBooks } from '@/api/accountbook';
 import { authedErrorMessage } from '@/api/auth-error';
 import { logout } from '@/api/member';
+import { AppHeader } from '@/components/app-menu';
 import { Chip } from '@/components/chip';
 import { DateField } from '@/components/date-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-
-const MENU: { label: string; href: Href }[] = [
-  { label: '대시보드', href: '/dashboard' },
-  { label: '통장설정', href: '/account-settings' },
-  { label: '카테고리', href: '/categories' },
-  { label: '마이페이지', href: '/mypage' },
-];
+import { addMonths } from '@/utils/date';
 
 export default function HomeScreen() {
   const theme = useTheme();
-  const [menuOpen, setMenuOpen] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountId, setAccountId] = useState<number>(); // undefined = 전체
   const [startDate, setStartDate] = useState<string>();
@@ -78,6 +72,8 @@ export default function HomeScreen() {
   function applyRange() {
     if (!startDate || !endDate) return setError('시작일과 종료일을 선택해주세요.');
     if (startDate > endDate) return setError('시작일이 종료일보다 늦습니다.');
+    // same rule as the backend: the end may be at most one month after the start
+    if (endDate > addMonths(startDate, 1)) return setError(`조회 기간은 최대 1개월입니다. (${addMonths(startDate, 1)}까지 선택할 수 있어요)`);
     setLoading(true);
     setError('');
     setRange({ startDate, endDate });
@@ -111,17 +107,16 @@ export default function HomeScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.header}>
-          <Pressable accessibilityRole="button" accessibilityLabel="메뉴" hitSlop={8} onPress={() => setMenuOpen(true)}>
-            <ThemedText type="subtitle">☰</ThemedText>
-          </Pressable>
-          <ThemedText type="smallBold">가계부</ThemedText>
-          {/* clearing the token is enough: the root layout's guard then sends the user to login */}
-          <Pressable accessibilityRole="button" hitSlop={8} onPress={logout} style={({ pressed }) => [styles.logout, pressed && styles.pressed]}>
+      <AppHeader
+        title="가계부"
+        right={
+          // clearing the token is enough: the root layout's guard then sends the user to login
+          <Pressable accessibilityRole="button" hitSlop={8} onPress={logout} style={({ pressed }) => pressed && styles.pressed}>
             <ThemedText type="small" themeColor="textSecondary">로그아웃</ThemedText>
           </Pressable>
-        </ThemedView>
+        }
+      />
+      <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.safeArea}>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipBar} contentContainerStyle={styles.chips}>
           {chips.map((c) => (
@@ -191,27 +186,6 @@ export default function HomeScreen() {
         </Pressable>
       </SafeAreaView>
 
-      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
-        <Pressable accessibilityLabel="메뉴 닫기" style={styles.backdrop} onPress={() => setMenuOpen(false)}>
-          {/* inner Pressable swallows taps so only the backdrop closes the menu */}
-          <Pressable style={[styles.drawer, { backgroundColor: theme.background }]}>
-            <SafeAreaView style={styles.menu}>
-              {MENU.map((m) => (
-                <Pressable
-                  key={m.label}
-                  accessibilityRole="button"
-                  onPress={() => {
-                    setMenuOpen(false);
-                    router.push(m.href);
-                  }}
-                  style={({ pressed }) => [styles.menuItem, pressed && styles.pressed]}>
-                  <ThemedText>{m.label}</ThemedText>
-                </Pressable>
-              ))}
-            </SafeAreaView>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </ThemedView>
   );
 }
@@ -227,15 +201,6 @@ const styles = StyleSheet.create({
     maxWidth: 600,
     paddingHorizontal: Spacing.three,
     paddingBottom: Spacing.three,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-  logout: {
-    marginLeft: 'auto',
   },
   dateRow: {
     flexDirection: 'row',
@@ -300,21 +265,5 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
-  },
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  drawer: {
-    width: 260,
-    height: '100%',
-  },
-  menu: {
-    paddingTop: Spacing.four,
-    paddingHorizontal: Spacing.three,
-    gap: Spacing.one,
-  },
-  menuItem: {
-    paddingVertical: Spacing.three,
   },
 });

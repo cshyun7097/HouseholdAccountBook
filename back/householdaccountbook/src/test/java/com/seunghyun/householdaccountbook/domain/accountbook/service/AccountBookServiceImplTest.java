@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -116,5 +117,24 @@ class AccountBookServiceImplTest {
                 new DashboardResponseDto.MonthlySummary("2026-11", 50000, 9000)), dashboard.getMonthly());
         assertEquals("2026-11", dashboard.getMonth());
         assertEquals(List.of(new CategoryTotal("식비", 9000L)), dashboard.getCategories());
+    }
+
+    @Test
+    void 조회_기간은_한_달까지_허용한다() {
+        accountBookService.getAccountBooksByDate("user", LocalDate.of(2026, 10, 15), LocalDate.of(2026, 11, 15), 0);
+        accountBookService.getAccountBooksByDate("user", LocalDate.of(2026, 1, 31), LocalDate.of(2026, 2, 28), 0);
+
+        verify(accountBookRepository, times(2)).findAllByMember_IdAndDateBetween(eq("user"), any(), any(), any());
+    }
+
+    @Test
+    void 조회_기간이_한_달을_넘거나_거꾸로면_예외() {
+        assertThrows(IllegalArgumentException.class,
+                () -> accountBookService.getAccountBooksByDate("user", LocalDate.of(2026, 10, 15), LocalDate.of(2026, 11, 16), 0));
+        assertThrows(IllegalArgumentException.class,
+                () -> accountBookService.getAccountBooksByAccountAndDate("user", 1L, LocalDate.of(2026, 1, 31), LocalDate.of(2026, 3, 1), 0));
+        assertThrows(IllegalArgumentException.class,
+                () -> accountBookService.getAccountBooksByDate("user", LocalDate.of(2026, 11, 2), LocalDate.of(2026, 11, 1), 0));
+        verifyNoInteractions(accountBookRepository);
     }
 }

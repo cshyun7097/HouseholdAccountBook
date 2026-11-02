@@ -7,3 +7,12 @@ export function today() {
   const d = new Date();
   return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
 }
+
+// yyyy-MM-dd plus whole months, clamped to the month's last day like Java's plusMonths
+// (plain Date would turn Jan 31 + 1 month into Mar 3).
+export function addMonths(iso: string, months: number) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const target = new Date(y, m - 1 + months, 1);
+  const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  return toIsoDate(target.getFullYear(), target.getMonth(), Math.min(d, lastDay));
+}

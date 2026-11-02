@@ -1,10 +1,10 @@
-import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authedErrorMessage } from '@/api/auth-error';
 import { addCategory, type Category, deleteCategory, getCategories } from '@/api/category';
+import { AppHeader } from '@/components/app-menu';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -46,7 +46,7 @@ export default function CategoriesScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <Stack.Screen options={{ headerShown: true, title: '카테고리' }} />
+      <AppHeader title="카테고리" />
       <SafeAreaView edges={['bottom']} style={styles.safeArea}>
         <ThemedView style={styles.inline}>
           <TextInput

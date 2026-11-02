@@ -1,9 +1,9 @@
-import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, type StyleProp, StyleSheet, TextInput, type TextStyle } from 'react-native';
 
 import { authedErrorMessage } from '@/api/auth-error';
 import { getMemberInfo, type MemberInfo, updateMember, type UpdateMemberRequest } from '@/api/member';
+import { AppHeader } from '@/components/app-menu';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -24,7 +24,7 @@ export default function MyPageScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <Stack.Screen options={{ headerShown: true, title: '마이페이지' }} />
+      <AppHeader title="마이페이지" />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ThemedView type="backgroundElement" style={styles.card}>
           <ThemedText type="smallBold">내 정보</ThemedText>
