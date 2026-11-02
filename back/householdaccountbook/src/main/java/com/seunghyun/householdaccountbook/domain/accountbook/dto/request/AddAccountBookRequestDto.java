@@ -3,6 +3,8 @@ package com.seunghyun.householdaccountbook.domain.accountbook.dto.request;
 import com.seunghyun.householdaccountbook.domain.accountbook.entity.AccountBookType;
 import lombok.*;
 
+import java.time.LocalDate;
+
 @Builder
 @Data
 @NoArgsConstructor
@@ -13,4 +15,5 @@ public class AddAccountBookRequestDto {
     private AccountBookType type;
     private Long categoryId;
     private Long accountId;
+    private LocalDate date; // 없으면 오늘
 }

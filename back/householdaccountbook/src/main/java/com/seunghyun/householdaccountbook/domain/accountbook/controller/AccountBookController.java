@@ -29,7 +29,7 @@ public class AccountBookController {
         accountBookService.addAccountBook(id, addDto.getCategoryId(), addDto.getAccountId(), AccountBook.builder()
                 .content(addDto.getContent())
                 .price(addDto.getPrice())
-                .date(LocalDate.now())
+                .date(addDto.getDate() != null ? addDto.getDate() : LocalDate.now())
                 .type(addDto.getType())
                 .build());
         return ResponseEntity.ok("가계부 추가 완료");

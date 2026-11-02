@@ -17,12 +17,16 @@ export type Page<T> = {
   page: { size: number; number: number; totalElements: number; totalPages: number };
 };
 
-// accountId omitted = every account
-export const getAccountBooks = (page: number, accountId?: number) =>
-  get<Page<AccountBook>>(`/accountbook/get${accountId ? `/${accountId}` : ''}?page=${page}`);
+export type DateRange = { startDate: string; endDate: string }; // yyyy-MM-dd, both days included
 
-// The backend stamps the date as today.
-export type AddAccountBookRequest = Pick<AccountBook, 'content' | 'price' | 'type' | 'categoryId' | 'accountId'>;
+// accountId omitted = every account; range omitted = all dates
+export const getAccountBooks = (page: number, accountId?: number, range?: DateRange) =>
+  get<Page<AccountBook>>(
+    `/accountbook/get${accountId ? `/${accountId}` : ''}${range ? '/date' : ''}?page=${page}` +
+      (range ? `&startDate=${range.startDate}&endDate=${range.endDate}` : ''),
+  );
+
+export type AddAccountBookRequest = Pick<AccountBook, 'content' | 'price' | 'type' | 'categoryId' | 'accountId' | 'date'>;
 export const addAccountBook = (data: AddAccountBookRequest) => post<string>('/accountbook/add', data);
 
 export type Dashboard = {

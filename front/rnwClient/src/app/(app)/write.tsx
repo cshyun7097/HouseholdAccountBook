@@ -7,16 +7,19 @@ import { type AccountBook, addAccountBook } from '@/api/accountbook';
 import { authedErrorMessage } from '@/api/auth-error';
 import { type Category, getCategories } from '@/api/category';
 import { Chip } from '@/components/chip';
+import { DateField } from '@/components/date-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { today } from '@/utils/date';
 
 export default function WriteScreen() {
   const theme = useTheme();
   const [type, setType] = useState<AccountBook['type']>('EXPENSE');
   const [content, setContent] = useState('');
   const [price, setPrice] = useState('');
+  const [date, setDate] = useState(today);
   const [accounts, setAccounts] = useState<Account[]>();
   const [accountId, setAccountId] = useState<number>();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -53,7 +56,7 @@ export default function WriteScreen() {
     setError('');
     setLoading(true);
     try {
-      await addAccountBook({ content: content.trim(), price: amount, type, accountId, categoryId });
+      await addAccountBook({ content: content.trim(), price: amount, type, accountId, categoryId, date });
       // dismissTo, not back: on web a reload empties the history and back has nowhere to go
       router.dismissTo('/home');
     } catch (e) {
@@ -89,6 +92,9 @@ export default function WriteScreen() {
           value={price}
           onChangeText={setPrice}
         />
+
+        <ThemedText type="smallBold">날짜</ThemedText>
+        <DateField label="날짜" value={date} onChange={setDate} style={styles.dateField} />
 
         <ThemedText type="smallBold">통장</ThemedText>
         {accounts?.length === 0 ? (
@@ -178,6 +184,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.two,
     fontSize: 16,
+  },
+  dateField: {
+    height: 48, // match the other inputs on this screen
   },
   dropdown: {
     flexDirection: 'row',
