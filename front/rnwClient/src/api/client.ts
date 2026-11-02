@@ -2,8 +2,12 @@ import Constants from 'expo-constants';
 
 import { getToken } from '@/api/token';
 
-// In dev, reach the backend on the same machine that serves Metro, so emulators and real devices both work.
-const devHost = Constants.expoConfig?.hostUri?.split(':')[0] ?? 'localhost';
+// In dev, reach the backend on the same machine that serves the app, so emulators and real devices both work.
+// Web has no hostUri: use the host the page was opened from (a phone browser's "localhost" is the phone itself).
+// `location` is undefined during static web rendering, where no request is made anyway.
+const devHost =
+  Constants.expoConfig?.hostUri?.split(':')[0] ??
+  (typeof location !== 'undefined' ? location.hostname : 'localhost');
 export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? `http://${devHost}:8080/api`;
 
 // Mirrors the backend GlobalExceptionHandler body: { status, error, message }

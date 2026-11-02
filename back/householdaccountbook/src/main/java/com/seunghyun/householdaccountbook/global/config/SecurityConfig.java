@@ -46,11 +46,13 @@ public class SecurityConfig {
     }
 
     // Expo web dev server runs on a different port than the API; native apps don't need CORS.
-    // shortcut: localhost origins only, add the deployed web origin when there is one
+    // Private LAN ranges let a phone on the same Wi-Fi open the web build via the Mac's address.
+    // shortcut: dev origins only (172.* is wider than the 172.16-31 private range), add the deployed web origin when there is one
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*"));
+        config.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*",
+                "http://192.168.*", "http://10.*", "http://172.*"));
         config.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
