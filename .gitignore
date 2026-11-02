@@ -1,6 +1,5 @@
 *.idea
-*.yaml
-*.yml
+.env
 
 .DS_Store
 ._.DS_Store
