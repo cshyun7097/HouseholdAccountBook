@@ -18,5 +18,7 @@ public interface MemberService {
 
     void withdraw(String id);
 
+    Member getMember(String id);
+
     void updateMember(String id, String currentPassword, String phoneNumber, String password);
 }

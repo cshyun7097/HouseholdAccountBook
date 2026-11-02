@@ -75,6 +75,12 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
+    public Member getMember(String id) {
+        return memberRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아이디입니다."));
+    }
+
+    @Override
     @Transactional
     public void updateMember(String id, String currentPassword, String phoneNumber, String password) {
         Member member = memberRepository.findById(id)
@@ -84,7 +90,10 @@ public class MemberServiceImpl implements MemberService {
             throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
         }
 
-        // null이면 기존 값 유지 (nullable = false 컬럼)
+        // null이면 기존 값 유지, 빈 값으로 바꾸는 것은 막는다 (nullable = false 컬럼)
+        if ((phoneNumber != null && phoneNumber.isBlank()) || (password != null && password.isBlank())) {
+            throw new IllegalArgumentException("변경할 값을 입력해주세요.");
+        }
         if (phoneNumber != null) {
             member.setPhoneNumber(phoneNumber);
         }

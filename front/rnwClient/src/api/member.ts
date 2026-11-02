@@ -27,5 +27,8 @@ export async function logout() {
   setSessionToken(null);
 }
 
+export type MemberInfo = { id: string; name: string; phoneNumber: string };
+export const getMemberInfo = () => get<MemberInfo>('/member/info');
+
 export const updateMember = (data: UpdateMemberRequest) => patch<string>('/member/update', data);
 export const withdraw = () => patch<string>('/member/withdraw');

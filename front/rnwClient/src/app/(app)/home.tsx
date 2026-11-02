@@ -15,9 +15,9 @@ import { useTheme } from '@/hooks/use-theme';
 
 const MENU: { label: string; href: Href }[] = [
   { label: '대시보드', href: '/dashboard' },
-  { label: '마이페이지', href: '/mypage' },
   { label: '통장설정', href: '/account-settings' },
   { label: '카테고리', href: '/categories' },
+  { label: '마이페이지', href: '/mypage' },
 ];
 
 export default function HomeScreen() {

@@ -93,4 +93,36 @@ class MemberServiceImplTest {
         assertThrows(IllegalArgumentException.class,
                 () -> memberService.resetPassword("user", "이름", "01012345678", " "));
     }
+
+    @Test
+    void 현재_비밀번호가_맞으면_휴대폰번호를_바꾼다() {
+        Member member = activeMember();
+        member.updatePassword("old");
+        when(memberRepository.findById("user")).thenReturn(Optional.of(member));
+
+        memberService.updateMember("user", "old", "01099990000", null);
+
+        assertEquals("01099990000", member.getPhoneNumber());
+        assertTrue(member.matchPassword("old"));
+    }
+
+    @Test
+    void 현재_비밀번호가_틀리면_바꾸지_않는다() {
+        Member member = activeMember();
+        member.updatePassword("old");
+        when(memberRepository.findById("user")).thenReturn(Optional.of(member));
+
+        assertThrows(IllegalArgumentException.class, () -> memberService.updateMember("user", "wrong", null, "new"));
+        assertFalse(member.matchPassword("new"));
+    }
+
+    @Test
+    void 새_비밀번호가_빈_값이면_바꾸지_않는다() {
+        Member member = activeMember();
+        member.updatePassword("old");
+        when(memberRepository.findById("user")).thenReturn(Optional.of(member));
+
+        assertThrows(IllegalArgumentException.class, () -> memberService.updateMember("user", "old", null, " "));
+        assertTrue(member.matchPassword("old"));
+    }
 }

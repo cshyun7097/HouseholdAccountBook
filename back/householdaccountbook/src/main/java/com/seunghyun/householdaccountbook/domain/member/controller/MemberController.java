@@ -7,6 +7,7 @@ import com.seunghyun.householdaccountbook.domain.member.dto.request.SignUpReques
 import com.seunghyun.householdaccountbook.domain.member.dto.request.UpdateMemberRequestDto;
 import com.seunghyun.householdaccountbook.domain.member.dto.response.FindIdResponseDto;
 import com.seunghyun.householdaccountbook.domain.member.dto.response.LoginResponseDto;
+import com.seunghyun.householdaccountbook.domain.member.dto.response.MemberInfoResponseDto;
 import com.seunghyun.householdaccountbook.domain.member.entity.Member;
 import com.seunghyun.householdaccountbook.domain.member.entity.WithDrawalStatus;
 import com.seunghyun.householdaccountbook.domain.member.service.MemberService;
@@ -68,6 +69,16 @@ public class MemberController {
     public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequestDto resetDto) {
         memberService.resetPassword(resetDto.getId(), resetDto.getName(), resetDto.getPhoneNumber(), resetDto.getNewPassword());
         return ResponseEntity.ok("비밀번호 재설정 완료");
+    }
+
+    @GetMapping("/member/info")
+    public ResponseEntity<?> getMemberInfo(@AuthenticationPrincipal String id) {
+        Member member = memberService.getMember(id);
+        return ResponseEntity.ok(MemberInfoResponseDto.builder()
+                .id(member.getId())
+                .name(member.getName())
+                .phoneNumber(member.getPhoneNumber())
+                .build());
     }
 
     @PatchMapping("/member/update")
