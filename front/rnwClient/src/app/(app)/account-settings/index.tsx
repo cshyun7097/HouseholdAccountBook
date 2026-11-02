@@ -43,6 +43,14 @@ export default function AccountSettingsScreen() {
     <ThemedView style={styles.container}>
       <Stack.Screen options={{ headerShown: true, title: '통장설정' }} />
       <SafeAreaView edges={['bottom']} style={styles.safeArea}>
+        {/* the list API already returns every balance, so the total needs no backend call */}
+        <ThemedView type="backgroundElement" style={styles.total}>
+          <ThemedText type="small" themeColor="textSecondary">총 잔액</ThemedText>
+          <ThemedText type="subtitle">
+            {loading ? '-' : `${accounts.reduce((sum, a) => sum + a.balance, 0).toLocaleString('ko-KR')}원`}
+          </ThemedText>
+        </ThemedView>
+
         {!!error && <ThemedText type="small" style={styles.error}>{error}</ThemedText>}
 
         <FlatList
@@ -94,6 +102,12 @@ const styles = StyleSheet.create({
     maxWidth: 600,
     paddingHorizontal: Spacing.three,
     paddingBottom: Spacing.three,
+  },
+  total: {
+    marginTop: Spacing.three,
+    padding: Spacing.three,
+    borderRadius: Spacing.two,
+    gap: Spacing.one,
   },
   error: {
     color: '#e5484d',
