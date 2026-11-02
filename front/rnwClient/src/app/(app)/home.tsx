@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { type Account, getAccounts } from '@/api/account';
 import { type AccountBook, getAccountBooks } from '@/api/accountbook';
 import { authedErrorMessage } from '@/api/auth-error';
+import { logout } from '@/api/member';
 import { Chip } from '@/components/chip';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -95,6 +96,10 @@ export default function HomeScreen() {
             <ThemedText type="subtitle">☰</ThemedText>
           </Pressable>
           <ThemedText type="smallBold">가계부</ThemedText>
+          {/* clearing the token is enough: the root layout's guard then sends the user to login */}
+          <Pressable accessibilityRole="button" hitSlop={8} onPress={logout} style={({ pressed }) => [styles.logout, pressed && styles.pressed]}>
+            <ThemedText type="small" themeColor="textSecondary">로그아웃</ThemedText>
+          </Pressable>
         </ThemedView>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipBar} contentContainerStyle={styles.chips}>
@@ -181,6 +186,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.three,
     paddingVertical: Spacing.two,
+  },
+  logout: {
+    marginLeft: 'auto',
   },
   chipBar: {
     flexGrow: 0,
