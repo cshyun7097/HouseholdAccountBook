@@ -12,4 +12,5 @@ FROM node:22-alpine
 WORKDIR /app
 COPY --from=build /app .
 EXPOSE 8081
-CMD ["npx", "expo", "serve", "--port", "8081"]
+# Vercel routes to $PORT (default 80); falls back to 8081 for docker-compose.
+CMD npx expo serve --port ${PORT:-8081}
