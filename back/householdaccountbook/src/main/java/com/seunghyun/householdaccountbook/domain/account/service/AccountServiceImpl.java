@@ -72,6 +72,26 @@ public class AccountServiceImpl implements AccountService {
         accountRepository.delete(account);
     }
 
+    @Override
+    @Transactional
+    public void transfer(String id, Long fromAccountId, Long toAccountId, Long amount) {
+        if (amount == null || amount <= 0) {
+            throw new IllegalArgumentException("이체 금액은 0보다 커야 합니다.");
+        }
+        if (fromAccountId == null || fromAccountId.equals(toAccountId)) {
+            throw new IllegalArgumentException("서로 다른 통장을 선택해주세요.");
+        }
+        // 두 통장 모두 본인 것인지 확인해서 남의 계좌로/에서 옮기는 것을 막는다
+        for (Long accountId : List.of(fromAccountId, toAccountId)) {
+            accountRepository.findByAccountIdAndMember_Id(accountId, id)
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 계좌입니다."));
+        }
+        if (accountRepository.changeBalance(fromAccountId, -amount) == 0) {
+            throw new IllegalArgumentException("잔액이 부족합니다.");
+        }
+        accountRepository.changeBalance(toAccountId, amount);
+    }
+
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
     }

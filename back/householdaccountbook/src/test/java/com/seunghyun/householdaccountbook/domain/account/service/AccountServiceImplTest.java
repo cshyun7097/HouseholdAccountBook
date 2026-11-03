@@ -13,7 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -64,5 +64,40 @@ class AccountServiceImplTest {
     @Test
     void 잔액_수정값이_없으면_예외() {
         assertThrows(IllegalArgumentException.class, () -> accountService.updateBalance("user", 1L, null));
+    }
+
+    @Test
+    void 이체하면_보내는_통장에서_빼고_받는_통장에_더한다() {
+        when(accountRepository.findByAccountIdAndMember_Id(anyLong(), eq("user"))).thenReturn(Optional.of(Account.builder().build()));
+        when(accountRepository.changeBalance(1L, -1000L)).thenReturn(1);
+
+        accountService.transfer("user", 1L, 2L, 1000L);
+
+        verify(accountRepository).changeBalance(2L, 1000L);
+    }
+
+    @Test
+    void 잔액이_부족하면_받는_통장에_더하지_않는다() {
+        when(accountRepository.findByAccountIdAndMember_Id(anyLong(), eq("user"))).thenReturn(Optional.of(Account.builder().build()));
+        when(accountRepository.changeBalance(1L, -1000L)).thenReturn(0);
+
+        assertThrows(IllegalArgumentException.class, () -> accountService.transfer("user", 1L, 2L, 1000L));
+        verify(accountRepository, never()).changeBalance(2L, 1000L);
+    }
+
+    @Test
+    void 남의_통장으로는_이체하지_않는다() {
+        when(accountRepository.findByAccountIdAndMember_Id(1L, "user")).thenReturn(Optional.of(Account.builder().build()));
+        when(accountRepository.findByAccountIdAndMember_Id(2L, "user")).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> accountService.transfer("user", 1L, 2L, 1000L));
+        verify(accountRepository, never()).changeBalance(anyLong(), anyLong());
+    }
+
+    @Test
+    void 같은_통장이나_0원_이하는_이체하지_않는다() {
+        assertThrows(IllegalArgumentException.class, () -> accountService.transfer("user", 1L, 1L, 1000L));
+        assertThrows(IllegalArgumentException.class, () -> accountService.transfer("user", 1L, 2L, 0L));
+        verify(accountRepository, never()).changeBalance(anyLong(), anyLong());
     }
 }

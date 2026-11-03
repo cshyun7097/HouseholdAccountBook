@@ -2,8 +2,9 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, TextInput } from 'react-native';
 
-import { type Account, deleteAccount, getAccounts, updateBalance } from '@/api/account';
+import { type Account, deleteAccount, getAccounts, transfer, updateBalance } from '@/api/account';
 import { authedErrorMessage } from '@/api/auth-error';
+import { Chip } from '@/components/chip';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -16,15 +17,21 @@ export default function AccountDetailScreen() {
   const theme = useTheme();
   const { accountId } = useLocalSearchParams<{ accountId: string }>();
   const [account, setAccount] = useState<Account | null>();
-  const [editing, setEditing] = useState(false);
+  const [others, setOthers] = useState<Account[]>([]);
+  const [mode, setMode] = useState<'balance' | 'transfer' | null>(null);
   const [newBalance, setNewBalance] = useState('');
+  const [toAccountId, setToAccountId] = useState<number>();
+  const [transferAmount, setTransferAmount] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // shortcut: no single-account API, so pick it out of the user's list; add GET /account/{id} if the list grows large
     getAccounts()
-      .then((res) => setAccount(res.find((a) => String(a.accountId) === accountId) ?? null))
+      .then((res) => {
+        setAccount(res.find((a) => String(a.accountId) === accountId) ?? null);
+        setOthers(res.filter((a) => String(a.accountId) !== accountId));
+      })
       .catch(async (e) => setError((await authedErrorMessage(e)) ?? ''));
   }, [accountId]);
 
@@ -47,9 +54,30 @@ export default function AccountDetailScreen() {
     run(async () => {
       await updateBalance(account.accountId, amount);
       setAccount({ ...account, balance: amount });
-      setEditing(false);
+      setMode(null);
       setNewBalance('');
     });
+  }
+
+  function onTransfer() {
+    if (!account) return;
+    const amount = Number(transferAmount);
+    if (!toAccountId) return setError('받는 통장을 선택해주세요.');
+    if (!Number.isSafeInteger(amount) || amount <= 0) return setError('이체 금액은 0보다 큰 숫자로 입력해주세요.');
+    if (amount > account.balance) return setError('잔액이 부족합니다.');
+    run(async () => {
+      await transfer(account.accountId, toAccountId, amount);
+      setAccount({ ...account, balance: account.balance - amount });
+      setOthers(others.map((a) => (a.accountId === toAccountId ? { ...a, balance: a.balance + amount } : a)));
+      setMode(null);
+      setTransferAmount('');
+      setToAccountId(undefined);
+    });
+  }
+
+  function toggle(next: 'balance' | 'transfer') {
+    setMode(mode === next ? null : next);
+    setError('');
   }
 
   function onDelete() {
@@ -89,7 +117,7 @@ export default function AccountDetailScreen() {
               ))}
             </ThemedView>
 
-            {editing && (
+            {mode === 'balance' && (
               <ThemedView style={styles.edit}>
                 <ThemedText type="small" themeColor="textSecondary">현재 금액: {won(account.balance)}</ThemedText>
                 <TextInput
@@ -112,18 +140,54 @@ export default function AccountDetailScreen() {
               </ThemedView>
             )}
 
+            {mode === 'transfer' && (
+              <ThemedView style={styles.edit}>
+                <ThemedText type="small" themeColor="textSecondary">보낼 수 있는 금액: {won(account.balance)}</ThemedText>
+                <ThemedText type="smallBold">받는 통장</ThemedText>
+                {others.length === 0 ? (
+                  <ThemedText type="small" themeColor="textSecondary">이체할 다른 통장이 없습니다.</ThemedText>
+                ) : (
+                  <ThemedView style={styles.chips}>
+                    {others.map((a) => (
+                      <Chip key={a.accountId} label={a.accountName} selected={a.accountId === toAccountId} onPress={() => setToAccountId(a.accountId)} />
+                    ))}
+                  </ThemedView>
+                )}
+                <TextInput
+                  style={inputStyle}
+                  placeholder="이체 금액"
+                  placeholderTextColor={theme.textSecondary}
+                  keyboardType="number-pad"
+                  value={withCommas(transferAmount)}
+                  onChangeText={(text) => setTransferAmount(onlyDigits(text))}
+                  onSubmitEditing={onTransfer}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={loading}
+                  onPress={onTransfer}
+                  style={({ pressed }) => [styles.button, { backgroundColor: theme.text }, (pressed || loading) && styles.pressed]}>
+                  <ThemedText style={{ color: theme.background }}>{loading ? '이체 중...' : '이체하기'}</ThemedText>
+                </Pressable>
+              </ThemedView>
+            )}
+
             {!!error && <ThemedText type="small" style={styles.error}>{error}</ThemedText>}
 
             <ThemedView style={styles.actions}>
               <Pressable
                 accessibilityRole="button"
                 disabled={loading}
-                onPress={() => {
-                  setEditing(!editing);
-                  setError('');
-                }}
+                onPress={() => toggle('balance')}
                 style={({ pressed }) => [styles.button, styles.action, { backgroundColor: theme.backgroundElement }, pressed && styles.pressed]}>
-                <ThemedText>{editing ? '취소' : '잔액 수정'}</ThemedText>
+                <ThemedText>{mode === 'balance' ? '취소' : '잔액 수정'}</ThemedText>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={loading}
+                onPress={() => toggle('transfer')}
+                style={({ pressed }) => [styles.button, styles.action, { backgroundColor: theme.backgroundElement }, pressed && styles.pressed]}>
+                <ThemedText>{mode === 'transfer' ? '취소' : '이체'}</ThemedText>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -167,6 +231,11 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   edit: {
+    gap: Spacing.two,
+  },
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.two,
   },
   input: {

@@ -16,3 +16,6 @@ export const createAccount = (data: CreateAccountRequest) => post<string>('/acco
 export const updateBalance = (accountId: number, balance: number) =>
   patch<string>(`/account/update-balance/${accountId}`, { balance });
 export const deleteAccount = (accountId: number) => del<string>(`/account/delete/${accountId}`);
+
+export const transfer = (fromAccountId: number, toAccountId: number, amount: number) =>
+  post<string>('/account/transfer', { fromAccountId, toAccountId, amount });

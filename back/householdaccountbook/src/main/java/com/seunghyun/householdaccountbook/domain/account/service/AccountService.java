@@ -13,4 +13,6 @@ public interface AccountService {
     void updateBalance(String id, Long accountId, Long balance);
 
     void deleteAccount(String id, Long accountId);
+
+    void transfer(String id, Long fromAccountId, Long toAccountId, Long amount);
 }

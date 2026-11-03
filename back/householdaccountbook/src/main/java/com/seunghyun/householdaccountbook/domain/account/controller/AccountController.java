@@ -1,6 +1,7 @@
 package com.seunghyun.householdaccountbook.domain.account.controller;
 
 import com.seunghyun.householdaccountbook.domain.account.dto.request.CreateAccountRequestDto;
+import com.seunghyun.householdaccountbook.domain.account.dto.request.TransferRequestDto;
 import com.seunghyun.householdaccountbook.domain.account.dto.request.UpdateBalanceRequestDto;
 import com.seunghyun.householdaccountbook.domain.account.dto.response.AccountResponseDto;
 import com.seunghyun.householdaccountbook.domain.account.entity.Account;
@@ -59,5 +60,12 @@ public class AccountController {
                                            @PathVariable Long accountId) {
         accountService.deleteAccount(id, accountId);
         return ResponseEntity.ok("계좌 삭제 완료");
+    }
+
+    @PostMapping("/account/transfer")
+    public ResponseEntity<?> transfer(@AuthenticationPrincipal String id,
+                                      @RequestBody TransferRequestDto transferDto) {
+        accountService.transfer(id, transferDto.getFromAccountId(), transferDto.getToAccountId(), transferDto.getAmount());
+        return ResponseEntity.ok("이체 완료");
     }
 }
