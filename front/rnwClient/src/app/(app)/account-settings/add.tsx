@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { onlyDigits, withCommas } from '@/utils/money';
 
 export default function AddAccountScreen() {
   const theme = useTheme();
@@ -67,8 +68,8 @@ export default function AddAccountScreen() {
           placeholder="현재 잔액"
           placeholderTextColor={theme.textSecondary}
           keyboardType="number-pad"
-          value={balance}
-          onChangeText={setBalance}
+          value={withCommas(balance)}
+          onChangeText={(text) => setBalance(onlyDigits(text))}
           onSubmitEditing={onAdd}
         />
 

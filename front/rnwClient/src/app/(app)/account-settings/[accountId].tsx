@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { onlyDigits, withCommas } from '@/utils/money';
 
 const won = (n: number) => `${n.toLocaleString('ko-KR')}원`;
 
@@ -97,8 +98,8 @@ export default function AccountDetailScreen() {
                   placeholderTextColor={theme.textSecondary}
                   keyboardType="number-pad"
                   autoFocus
-                  value={newBalance}
-                  onChangeText={setNewBalance}
+                  value={withCommas(newBalance)}
+                  onChangeText={(text) => setNewBalance(onlyDigits(text))}
                   onSubmitEditing={onSaveBalance}
                 />
                 <Pressable

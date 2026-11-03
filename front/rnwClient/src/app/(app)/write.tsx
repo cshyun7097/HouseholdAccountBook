@@ -13,6 +13,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { today } from '@/utils/date';
+import { onlyDigits, withCommas } from '@/utils/money';
 
 export default function WriteScreen() {
   const theme = useTheme();
@@ -89,8 +90,8 @@ export default function WriteScreen() {
           placeholder="금액"
           placeholderTextColor={theme.textSecondary}
           keyboardType="number-pad"
-          value={price}
-          onChangeText={setPrice}
+          value={withCommas(price)}
+          onChangeText={(text) => setPrice(onlyDigits(text))}
         />
 
         <ThemedText type="smallBold">날짜</ThemedText>
