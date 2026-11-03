@@ -4,17 +4,17 @@ spring:
   config:
     import: optional:file:../../.env[.properties]
   datasource:
-    url: jdbc:postgresql://${HOST_VALUE}:5432/householdaccountbook_5zlt?sslmode=require
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/householdaccountbook}
     driver-class-name: org.postgresql.Driver
     username: root
     password: ${DB_PASSWORD}
   jpa:
     properties:
       hibernate:
-        show-sql: true
-        format-sql: true
+        show_sql: true
+        format_sql: true
     hibernate:
-      ddl-auto: update	# 실서버에서는 validate로 설정해야 한다!
+      ddl-auto: create-drop	# 실서버에서는 validate로 설정해야 한다!
 
 server:
   servlet:

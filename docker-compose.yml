@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: householdaccountbook
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d householdaccountbook"]
+      interval: 5s
+      retries: 20
+
+  back:
+    build: ./back/householdaccountbook
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/householdaccountbook
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  front:
+    build: ./front/rnwClient
+    ports:
+      - "8081:8081"
+    depends_on:
+      - back
+
+volumes:
+  db-data:
