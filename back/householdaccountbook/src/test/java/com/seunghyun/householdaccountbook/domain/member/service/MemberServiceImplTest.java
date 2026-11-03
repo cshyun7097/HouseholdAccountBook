@@ -30,6 +30,33 @@ class MemberServiceImplTest {
     }
 
     @Test
+    void 휴대폰번호가_숫자_11자리가_아니면_가입하지_않는다() {
+        for (String phone : List.of("0101234567", "010123456789", "010-1234-5678")) {
+            Member member = Member.builder().id("user").password("pw").name("이름").phoneNumber(phone).build();
+            assertThrows(IllegalArgumentException.class, () -> memberService.signUp(member));
+        }
+        verify(memberRepository, never()).save(any());
+    }
+
+    @Test
+    void 비밀번호가_20자를_넘으면_가입하지_않는다() {
+        Member member = Member.builder().id("user").password("a".repeat(21)).name("이름").phoneNumber("01012345678").build();
+
+        assertThrows(IllegalArgumentException.class, () -> memberService.signUp(member));
+        verify(memberRepository, never()).save(any());
+    }
+
+    @Test
+    void 비밀번호가_20자면_가입한다() {
+        when(memberRepository.findById("user")).thenReturn(Optional.empty());
+        Member member = Member.builder().id("user").password("a".repeat(20)).name("이름").phoneNumber("01012345678").build();
+
+        memberService.signUp(member);
+
+        verify(memberRepository).save(member);
+    }
+
+    @Test
     void 새_아이디면_가입한다() {
         when(memberRepository.findById("user")).thenReturn(Optional.empty());
 

@@ -20,6 +20,16 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public void signUp(Member member) {
+        // 프론트와 같은 규칙: 화면을 거치지 않은 요청도 막는다
+        if (isBlank(member.getName()) || isBlank(member.getId()) || isBlank(member.getPassword()) || isBlank(member.getPhoneNumber())) {
+            throw new IllegalArgumentException("모든 항목을 입력해주세요.");
+        }
+        if (!member.getPhoneNumber().matches("\\d{11}")) {
+            throw new IllegalArgumentException("휴대폰번호는 숫자 11자리로 입력해주세요.");
+        }
+        if (member.getPassword().length() > 20) {
+            throw new IllegalArgumentException("비밀번호는 20자 이내로 입력해주세요.");
+        }
         if (!checkId(member.getId())) {
             throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
         }
@@ -108,5 +118,9 @@ public class MemberServiceImpl implements MemberService {
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아이디입니다."));
         member.setWithDrawalStatus(WithDrawalStatus.INACTIVE);
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }
