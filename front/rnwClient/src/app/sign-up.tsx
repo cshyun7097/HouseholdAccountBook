@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { onlyDigits } from '@/utils/money';
 
 export default function SignUpScreen() {
   const theme = useTheme();
@@ -21,6 +22,8 @@ export default function SignUpScreen() {
 
   async function onSignUp() {
     if (!name || !phoneNumber || !id || !password) return setError('모든 항목을 입력해주세요.');
+    if (phoneNumber.length !== 11) return setError('휴대폰번호는 숫자 11자리로 입력해주세요.');
+    if (password.length > 20) return setError('비밀번호는 20자 이내로 입력해주세요.');
     setError('');
     setLoading(true);
     try {
@@ -53,11 +56,12 @@ export default function SignUpScreen() {
           />
           <TextInput
             style={inputStyle}
-            placeholder="휴대폰번호"
+            placeholder="휴대폰번호 (숫자 11자리)"
             placeholderTextColor={theme.textSecondary}
             keyboardType="phone-pad"
+            maxLength={11}
             value={phoneNumber}
-            onChangeText={setPhoneNumber}
+            onChangeText={(t) => setPhoneNumber(onlyDigits(t))}
           />
           <TextInput
             style={inputStyle}
@@ -70,9 +74,10 @@ export default function SignUpScreen() {
           />
           <TextInput
             style={inputStyle}
-            placeholder="비밀번호"
+            placeholder="비밀번호 (20자 이내)"
             placeholderTextColor={theme.textSecondary}
             secureTextEntry
+            maxLength={20}
             value={password}
             onChangeText={setPassword}
             onSubmitEditing={onSignUp}
