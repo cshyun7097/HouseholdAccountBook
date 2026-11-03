@@ -31,6 +31,19 @@ public interface AccountBookRepository extends JpaRepository<AccountBook, Long> 
     @EntityGraph(attributePaths = "category")
     Page<AccountBook> findAllByMember_IdAndAccount_AccountIdAndDateBetween(String id, Long accountId, LocalDate startDate, LocalDate endDate, Pageable pageable);
 
+    // 카테고리 여러 개 선택 조회 (통장, 기간은 선택)
+    @EntityGraph(attributePaths = "category")
+    Page<AccountBook> findAllByMember_IdAndCategory_CategoryIdIn(String id, List<Long> categoryIds, Pageable pageable);
+
+    @EntityGraph(attributePaths = "category")
+    Page<AccountBook> findAllByMember_IdAndCategory_CategoryIdInAndAccount_AccountId(String id, List<Long> categoryIds, Long accountId, Pageable pageable);
+
+    @EntityGraph(attributePaths = "category")
+    Page<AccountBook> findAllByMember_IdAndCategory_CategoryIdInAndDateBetween(String id, List<Long> categoryIds, LocalDate startDate, LocalDate endDate, Pageable pageable);
+
+    @EntityGraph(attributePaths = "category")
+    Page<AccountBook> findAllByMember_IdAndCategory_CategoryIdInAndAccount_AccountIdAndDateBetween(String id, List<Long> categoryIds, Long accountId, LocalDate startDate, LocalDate endDate, Pageable pageable);
+
     Optional<AccountBook> findByAccountBookIdAndMember_Id(Long accountBookId, String id);
 
     boolean existsByAccount_AccountId(Long accountId);

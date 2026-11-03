@@ -137,4 +137,33 @@ class AccountBookServiceImplTest {
                 () -> accountBookService.getAccountBooksByDate("user", LocalDate.of(2026, 11, 2), LocalDate.of(2026, 11, 1), 0));
         verifyNoInteractions(accountBookRepository);
     }
+
+    @Test
+    void 카테고리를_선택하지_않으면_조회하지_않는다() {
+        assertThrows(IllegalArgumentException.class,
+                () -> accountBookService.getAccountBooksByCategories("user", List.of(), null, null, null, 0));
+    }
+
+    @Test
+    void 카테고리_조회는_통장과_기간이_있으면_둘_다_조건에_건다() {
+        LocalDate start = LocalDate.of(2026, 11, 1), end = LocalDate.of(2026, 11, 30);
+
+        accountBookService.getAccountBooksByCategories("user", List.of(1L, 2L), 3L, start, end, 0);
+
+        verify(accountBookRepository).findAllByMember_IdAndCategory_CategoryIdInAndAccount_AccountIdAndDateBetween(
+                eq("user"), eq(List.of(1L, 2L)), eq(3L), eq(start), eq(end), any());
+    }
+
+    @Test
+    void 카테고리_조회는_통장이_없으면_전체_통장에서_찾는다() {
+        accountBookService.getAccountBooksByCategories("user", List.of(1L), null, null, null, 0);
+
+        verify(accountBookRepository).findAllByMember_IdAndCategory_CategoryIdIn(eq("user"), eq(List.of(1L)), any());
+    }
+
+    @Test
+    void 카테고리_조회는_기간이_1개월을_넘으면_막는다() {
+        assertThrows(IllegalArgumentException.class, () -> accountBookService.getAccountBooksByCategories(
+                "user", List.of(1L), null, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 3, 1), 0));
+    }
 }

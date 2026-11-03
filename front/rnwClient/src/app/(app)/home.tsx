@@ -6,8 +6,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { type Account, getAccounts } from '@/api/account';
 import { type AccountBook, type DateRange, getAccountBooks } from '@/api/accountbook';
 import { authedErrorMessage } from '@/api/auth-error';
+import { type Category, getCategories } from '@/api/category';
 import { logout } from '@/api/member';
 import { AppHeader } from '@/components/app-menu';
+import { CategoryPicker } from '@/components/category-picker';
 import { Chip } from '@/components/chip';
 import { DateField } from '@/components/date-field';
 import { ThemedText } from '@/components/themed-text';
@@ -20,6 +22,8 @@ export default function HomeScreen() {
   const theme = useTheme();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountId, setAccountId] = useState<number>(); // undefined = 전체
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryIds, setCategoryIds] = useState<number[]>([]); // empty = 전체
   const [startDate, setStartDate] = useState<string>();
   const [endDate, setEndDate] = useState<string>();
   const [range, setRange] = useState<DateRange>(); // undefined = all dates
@@ -37,13 +41,14 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       getAccounts().then(setAccounts).catch(handleError);
+      getCategories().then(setCategories).catch(handleError);
     }, []),
   );
 
   useFocusEffect(
     useCallback(() => {
       let ignore = false; // drop responses for a filter the user already switched away from
-      getAccountBooks(0, accountId, range)
+      getAccountBooks(0, accountId, range, categoryIds)
         .then((res) => {
           if (ignore) return;
           setItems(res.content);
@@ -59,7 +64,7 @@ export default function HomeScreen() {
       return () => {
         ignore = true;
       };
-    }, [accountId, range]),
+    }, [accountId, range, categoryIds]),
   );
 
   function selectAccount(id: number | undefined) {
@@ -67,6 +72,13 @@ export default function HomeScreen() {
     setLoading(true);
     setError('');
     setAccountId(id);
+  }
+
+  function selectCategories(ids: number[]) {
+    if (ids.length === categoryIds.length && ids.every((id) => categoryIds.includes(id))) return;
+    setLoading(true);
+    setError('');
+    setCategoryIds(ids);
   }
 
   function applyRange() {
@@ -92,7 +104,7 @@ export default function HomeScreen() {
     if (loading || !hasMore) return;
     setLoading(true);
     try {
-      const res = await getAccountBooks(page + 1, accountId, range);
+      const res = await getAccountBooks(page + 1, accountId, range, categoryIds);
       setItems((prev) => [...prev, ...res.content]);
       setPage(res.page.number);
       setHasMore(res.page.number + 1 < res.page.totalPages);
@@ -123,6 +135,8 @@ export default function HomeScreen() {
             <Chip key={c.id ?? 'all'} label={c.name} selected={c.id === accountId} onPress={() => selectAccount(c.id)} />
           ))}
         </ScrollView>
+
+        <CategoryPicker categories={categories} value={categoryIds} onChange={selectCategories} style={styles.categoryPicker} />
 
         <ThemedView style={styles.dateRow}>
           <DateField label="시작일" value={startDate} onChange={setStartDate} style={styles.dateInput} />
@@ -157,7 +171,7 @@ export default function HomeScreen() {
           ListEmptyComponent={
             loading ? undefined : (
               <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
-                {range ? '해당 기간의 가계부가 없습니다.' : '작성된 가계부가 없습니다.'}
+                {range || categoryIds.length ? '조건에 맞는 가계부가 없습니다.' : '작성된 가계부가 없습니다.'}
               </ThemedText>
             )
           }
@@ -201,6 +215,9 @@ const styles = StyleSheet.create({
     maxWidth: 600,
     paddingHorizontal: Spacing.three,
     paddingBottom: Spacing.three,
+  },
+  categoryPicker: {
+    marginBottom: Spacing.two,
   },
   dateRow: {
     flexDirection: 'row',

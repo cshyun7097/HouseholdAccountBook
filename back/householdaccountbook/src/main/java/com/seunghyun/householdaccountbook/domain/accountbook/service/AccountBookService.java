@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.List;
 
 public interface AccountBookService {
 
@@ -19,6 +20,9 @@ public interface AccountBookService {
     Page<AccountBook> getAccountBooksByDate(String id, LocalDate startDate, LocalDate endDate, int page);
 
     Page<AccountBook> getAccountBooksByAccountAndDate(String id, Long accountId, LocalDate startDate, LocalDate endDate, int page);
+
+    // accountId, startDate/endDate는 null이면 조건에서 뺀다
+    Page<AccountBook> getAccountBooksByCategories(String id, List<Long> categoryIds, Long accountId, LocalDate startDate, LocalDate endDate, int page);
 
     void updateAccountBook(String id, Long accountBookId, Long categoryId, String content, Long price, AccountBookType type);
 

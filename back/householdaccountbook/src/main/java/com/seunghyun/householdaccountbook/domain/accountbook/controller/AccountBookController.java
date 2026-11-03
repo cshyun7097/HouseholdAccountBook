@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.List;
 
 @RestController
 @Slf4j
@@ -69,6 +70,19 @@ public class AccountBookController {
                                                              @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
                                                              @RequestParam(defaultValue = "0") int page) {
         PagedModel<AccountBookResponseDto> accountBooks = new PagedModel<>(accountBookService.getAccountBooksByAccountAndDate(id, accountId, startDate, endDate, page)
+                .map(this::toResponse));
+        return ResponseEntity.ok(accountBooks);
+    }
+
+    // 예: /accountbook/get/category?categoryIds=1,2&accountId=3&startDate=2026-11-01&endDate=2026-11-30
+    @GetMapping("/accountbook/get/category")
+    public ResponseEntity<?> getAccountBooksByCategories(@AuthenticationPrincipal String id,
+                                                        @RequestParam List<Long> categoryIds,
+                                                        @RequestParam(required = false) Long accountId,
+                                                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                                                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+                                                        @RequestParam(defaultValue = "0") int page) {
+        PagedModel<AccountBookResponseDto> accountBooks = new PagedModel<>(accountBookService.getAccountBooksByCategories(id, categoryIds, accountId, startDate, endDate, page)
                 .map(this::toResponse));
         return ResponseEntity.ok(accountBooks);
     }

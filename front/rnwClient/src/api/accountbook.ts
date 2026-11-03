@@ -19,12 +19,16 @@ export type Page<T> = {
 
 export type DateRange = { startDate: string; endDate: string }; // yyyy-MM-dd, both days included
 
-// accountId omitted = every account; range omitted = all dates
-export const getAccountBooks = (page: number, accountId?: number, range?: DateRange) =>
-  get<Page<AccountBook>>(
-    `/accountbook/get${accountId ? `/${accountId}` : ''}${range ? '/date' : ''}?page=${page}` +
-      (range ? `&startDate=${range.startDate}&endDate=${range.endDate}` : ''),
-  );
+// accountId omitted = every account; range omitted = all dates; categoryIds empty = every category
+export const getAccountBooks = (page: number, accountId?: number, range?: DateRange, categoryIds: number[] = []) => {
+  const dates = range ? `&startDate=${range.startDate}&endDate=${range.endDate}` : '';
+  if (categoryIds.length) {
+    return get<Page<AccountBook>>(
+      `/accountbook/get/category?page=${page}&categoryIds=${categoryIds.join(',')}${accountId ? `&accountId=${accountId}` : ''}${dates}`,
+    );
+  }
+  return get<Page<AccountBook>>(`/accountbook/get${accountId ? `/${accountId}` : ''}${range ? '/date' : ''}?page=${page}${dates}`);
+};
 
 export type AddAccountBookRequest = Pick<AccountBook, 'content' | 'price' | 'type' | 'categoryId' | 'accountId' | 'date'>;
 export const addAccountBook = (data: AddAccountBookRequest) => post<string>('/accountbook/add', data);

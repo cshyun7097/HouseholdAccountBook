@@ -97,6 +97,27 @@ public class AccountBookServiceImpl implements AccountBookService {
     }
 
     @Override
+    public Page<AccountBook> getAccountBooksByCategories(String id, List<Long> categoryIds, Long accountId, LocalDate startDate, LocalDate endDate, int page) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            throw new IllegalArgumentException("카테고리를 하나 이상 선택해주세요.");
+        }
+        if ((startDate == null) != (endDate == null)) {
+            throw new IllegalArgumentException("시작일과 종료일을 모두 선택해주세요.");
+        }
+        PageRequest pageable = PageRequest.of(page, PAGE_SIZE, SORT);
+        // 회원 조건을 같이 걸어서 남의 카테고리/계좌 id를 넣어도 본인 내역만 조회된다
+        if (startDate == null) {
+            return accountId == null
+                    ? accountBookRepository.findAllByMember_IdAndCategory_CategoryIdIn(id, categoryIds, pageable)
+                    : accountBookRepository.findAllByMember_IdAndCategory_CategoryIdInAndAccount_AccountId(id, categoryIds, accountId, pageable);
+        }
+        validateRange(startDate, endDate);
+        return accountId == null
+                ? accountBookRepository.findAllByMember_IdAndCategory_CategoryIdInAndDateBetween(id, categoryIds, startDate, endDate, pageable)
+                : accountBookRepository.findAllByMember_IdAndCategory_CategoryIdInAndAccount_AccountIdAndDateBetween(id, categoryIds, accountId, startDate, endDate, pageable);
+    }
+
+    @Override
     @Transactional
     public void updateAccountBook(String id, Long accountBookId, Long categoryId, String content, Long price, AccountBookType type) {
         AccountBook accountBook = accountBookRepository.findByAccountBookIdAndMember_Id(accountBookId, id)
