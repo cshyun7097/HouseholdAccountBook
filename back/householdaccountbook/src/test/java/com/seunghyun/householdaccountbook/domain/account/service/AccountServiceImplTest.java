@@ -3,6 +3,8 @@ package com.seunghyun.householdaccountbook.domain.account.service;
 import com.seunghyun.householdaccountbook.domain.account.entity.Account;
 import com.seunghyun.householdaccountbook.domain.account.repository.AccountRepository;
 import com.seunghyun.householdaccountbook.domain.accountbook.repository.AccountBookRepository;
+import com.seunghyun.householdaccountbook.domain.member.entity.Member;
+import com.seunghyun.householdaccountbook.domain.member.entity.WithDrawalStatus;
 import com.seunghyun.householdaccountbook.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -38,6 +41,19 @@ class AccountServiceImplTest {
 
         assertThrows(IllegalArgumentException.class, () -> accountService.createAccount("user", account));
         verify(accountRepository, never()).save(any());
+    }
+
+    @Test
+    void 계좌번호는_앞_5자리만_남기고_가려서_저장한다() {
+        Member member = Member.builder().id("user").withDrawalStatus(WithDrawalStatus.ACTIVE).build();
+        when(memberRepository.findById("user")).thenReturn(Optional.of(member));
+        Account account = Account.builder().accountName("월급").bankInfo("국민").accountNumber("1234567890").balance(0L).build();
+
+        accountService.createAccount("user", account);
+
+        assertEquals("12345*****", account.getAccountNumber());
+        verify(accountRepository).save(account);
+        assertEquals("123", AccountServiceImpl.maskAccountNumber("123"));
     }
 
     @Test

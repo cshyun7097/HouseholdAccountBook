@@ -35,10 +35,8 @@ public class AccountServiceImpl implements AccountService {
         if (member.getWithDrawalStatus() != WithDrawalStatus.ACTIVE) {
             throw new IllegalArgumentException("탈퇴한 회원입니다.");
         }
-        if (accountRepository.existsByAccountNumber(account.getAccountNumber())) {
-            throw new IllegalArgumentException("이미 존재하는 계좌번호입니다.");
-        }
-
+        // Only the masked number is stored, so duplicates can't be detected (different accounts can share the first 5 digits).
+        account.setAccountNumber(maskAccountNumber(account.getAccountNumber()));
         account.setMember(member);
         accountRepository.save(account);
     }
@@ -94,5 +92,12 @@ public class AccountServiceImpl implements AccountService {
 
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    // 앞 5글자만 남기고 나머지는 *로 가린다 (예: 1234567890 -> 12345*****)
+    static String maskAccountNumber(String accountNumber) {
+        String trimmed = accountNumber.trim();
+        if (trimmed.length() <= 5) return trimmed;
+        return trimmed.substring(0, 5) + "*".repeat(trimmed.length() - 5);
     }
 }

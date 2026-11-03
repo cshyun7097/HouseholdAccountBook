@@ -16,7 +16,7 @@ public class Account {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long accountId;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String accountNumber;
 
     @Column(nullable = false)
