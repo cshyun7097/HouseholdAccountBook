@@ -84,6 +84,7 @@ export default function WriteScreen() {
     run(() => deleteAccountBook(editId));
   }
 
+  const selectedAccount = accounts?.find((a) => a.accountId === accountId);
   const inputStyle = [styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }];
 
   return (
@@ -121,7 +122,7 @@ export default function WriteScreen() {
         <ThemedText type="smallBold">통장</ThemedText>
         {editId ? (
           <ThemedText themeColor="textSecondary">
-            {accounts?.find((a) => a.accountId === accountId)?.accountName ?? '-'}
+            {selectedAccount?.accountName ?? '-'}
           </ThemedText>
         ) : accounts?.length === 0 ? (
           <Pressable accessibilityRole="link" onPress={() => router.push('/account-settings/add')}>
@@ -133,6 +134,9 @@ export default function WriteScreen() {
               <Chip key={a.accountId} label={a.accountName} selected={a.accountId === accountId} onPress={() => setAccountId(a.accountId)} />
             ))}
           </ThemedView>
+        )}
+        {selectedAccount && (
+          <ThemedText type="small" themeColor="textSecondary">잔액: {selectedAccount.balance.toLocaleString('ko-KR')}원</ThemedText>
         )}
 
         <ThemedText type="smallBold">카테고리</ThemedText>
