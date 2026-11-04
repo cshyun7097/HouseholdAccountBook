@@ -1,4 +1,4 @@
-import { get, post } from '@/api/client';
+import { del, get, patch, post } from '@/api/client';
 
 export type AccountBook = {
   accountBookId: number;
@@ -32,6 +32,12 @@ export const getAccountBooks = (page: number, accountId?: number, range?: DateRa
 
 export type AddAccountBookRequest = Pick<AccountBook, 'content' | 'price' | 'type' | 'categoryId' | 'accountId' | 'date'>;
 export const addAccountBook = (data: AddAccountBookRequest) => post<string>('/accountbook/add', data);
+
+// The backend can't change an entry's date or account
+export type UpdateAccountBookRequest = Pick<AccountBook, 'content' | 'price' | 'type' | 'categoryId'>;
+export const updateAccountBook = (accountBookId: number, data: UpdateAccountBookRequest) =>
+  patch<string>(`/accountbook/update/${accountBookId}`, data);
+export const deleteAccountBook = (accountBookId: number) => del<string>(`/accountbook/delete/${accountBookId}`);
 
 export type Dashboard = {
   month: string; // yyyy-MM

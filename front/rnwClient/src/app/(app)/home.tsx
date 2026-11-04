@@ -177,18 +177,25 @@ export default function HomeScreen() {
           }
           ListFooterComponent={loading ? <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>불러오는 중...</ThemedText> : undefined}
           renderItem={({ item }) => (
-            <ThemedView type="backgroundElement" style={styles.row}>
-              <ThemedView type="backgroundElement" style={styles.rowText}>
-                <ThemedText>{item.content}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {item.date} · {item.categoryName}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityHint="수정 또는 삭제"
+              // there is no single-entry API, so the entry travels to the edit screen as params
+              onPress={() => router.push({ pathname: '/write', params: { ...item } })}
+              style={({ pressed }) => pressed && styles.pressed}>
+              <ThemedView type="backgroundElement" style={styles.row}>
+                <ThemedView type="backgroundElement" style={styles.rowText}>
+                  <ThemedText>{item.content}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {item.date} · {item.categoryName}
+                  </ThemedText>
+                </ThemedView>
+                <ThemedText type="smallBold" style={{ color: item.type === 'INCOME' ? '#3c87f7' : '#e5484d' }}>
+                  {item.type === 'INCOME' ? '+' : '-'}
+                  {item.price.toLocaleString('ko-KR')}원
                 </ThemedText>
               </ThemedView>
-              <ThemedText type="smallBold" style={{ color: item.type === 'INCOME' ? '#3c87f7' : '#e5484d' }}>
-                {item.type === 'INCOME' ? '+' : '-'}
-                {item.price.toLocaleString('ko-KR')}원
-              </ThemedText>
-            </ThemedView>
+            </Pressable>
           )}
         />
 
