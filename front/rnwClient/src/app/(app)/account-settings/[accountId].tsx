@@ -24,6 +24,7 @@ export default function AccountDetailScreen() {
   const [transferAmount, setTransferAmount] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false); // Alert buttons do nothing on web, so confirm with a second tap
 
   useEffect(() => {
     // shortcut: no single-account API, so pick it out of the user's list; add GET /account/{id} if the list grows large
@@ -77,11 +78,13 @@ export default function AccountDetailScreen() {
 
   function toggle(next: 'balance' | 'transfer') {
     setMode(mode === next ? null : next);
+    setConfirmDelete(false);
     setError('');
   }
 
   function onDelete() {
     if (!account) return;
+    if (!confirmDelete) return setConfirmDelete(true);
     run(async () => {
       await deleteAccount(account.accountId);
       router.dismissTo('/account-settings');
@@ -173,6 +176,7 @@ export default function AccountDetailScreen() {
             )}
 
             {!!error && <ThemedText type="small" style={styles.error}>{error}</ThemedText>}
+            {confirmDelete && <ThemedText type="small" style={styles.error}>통장을 삭제할까요? 삭제 버튼을 한 번 더 누르면 삭제됩니다.</ThemedText>}
 
             <ThemedView style={styles.actions}>
               <Pressable
@@ -194,7 +198,7 @@ export default function AccountDetailScreen() {
                 disabled={loading}
                 onPress={onDelete}
                 style={({ pressed }) => [styles.button, styles.action, styles.delete, (pressed || loading) && styles.pressed]}>
-                <ThemedText style={styles.deleteText}>삭제</ThemedText>
+                <ThemedText style={styles.deleteText}>{confirmDelete ? '한 번 더' : '삭제'}</ThemedText>
               </Pressable>
             </ThemedView>
           </>

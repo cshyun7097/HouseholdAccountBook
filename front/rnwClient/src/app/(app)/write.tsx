@@ -33,6 +33,7 @@ export default function WriteScreen() {
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false); // Alert buttons do nothing on web, so confirm with a second tap
 
   async function showError(e: unknown) {
     setError((await authedErrorMessage(e)) ?? '');
@@ -77,7 +78,11 @@ export default function WriteScreen() {
     await run(() => (editId ? updateAccountBook(editId, data) : addAccountBook({ ...data, accountId, date })));
   }
 
-  const onDelete = () => editId && run(() => deleteAccountBook(editId));
+  function onDelete() {
+    if (!editId) return;
+    if (!confirmDelete) return setConfirmDelete(true);
+    run(() => deleteAccountBook(editId));
+  }
 
   const inputStyle = [styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }];
 
@@ -184,7 +189,7 @@ export default function WriteScreen() {
               disabled={loading}
               onPress={onDelete}
               style={({ pressed }) => [styles.button, styles.delete, (pressed || loading) && styles.pressed]}>
-              <ThemedText style={styles.deleteText}>삭제하기</ThemedText>
+              <ThemedText style={styles.deleteText}>{confirmDelete ? '정말 삭제할까요? 한 번 더 누르면 삭제됩니다' : '삭제하기'}</ThemedText>
             </Pressable>
           </>
         )}
