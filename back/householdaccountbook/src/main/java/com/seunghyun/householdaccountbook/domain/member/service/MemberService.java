@@ -16,7 +16,7 @@ public interface MemberService {
 
     void resetPassword(String id, String name, String phoneNumber, String newPassword);
 
-    void withdraw(String id);
+    void withdraw(String id, String currentPassword);
 
     Member getMember(String id);
 

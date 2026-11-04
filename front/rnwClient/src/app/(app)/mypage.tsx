@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, type StyleProp, StyleSheet, TextInput, type TextStyle } from 'react-native';
 
 import { authedErrorMessage } from '@/api/auth-error';
-import { getMemberInfo, type MemberInfo, updateMember, type UpdateMemberRequest } from '@/api/member';
+import { getMemberInfo, type MemberInfo, updateMember, type UpdateMemberRequest, withdraw } from '@/api/member';
 import { AppHeader } from '@/components/app-menu';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -70,6 +70,8 @@ export default function MyPageScreen() {
           toRequest={(v) => ({ password: v.password })}
           doneMessage="비밀번호가 변경되었습니다."
         />
+
+        <WithdrawForm inputStyle={inputStyle} />
       </ScrollView>
     </ThemedView>
   );
@@ -162,6 +164,52 @@ function UpdateForm({
   );
 }
 
+// Typing the current password is the confirmation step (Alert buttons don't work on web).
+function WithdrawForm({ inputStyle }: { inputStyle: StyleProp<TextStyle> }) {
+  const theme = useTheme();
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function onWithdraw() {
+    if (!currentPassword) return setError('현재 비밀번호를 입력해주세요.');
+    setError('');
+    setLoading(true);
+    try {
+      await withdraw(currentPassword);
+    } catch (e) {
+      setError((await authedErrorMessage(e)) ?? '');
+      setLoading(false);
+    }
+  }
+
+  return (
+    <ThemedView type="backgroundElement" style={styles.card}>
+      <ThemedText type="smallBold">회원탈퇴</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">
+        탈퇴하면 같은 아이디로 다시 로그인하거나 가입할 수 없습니다.
+      </ThemedText>
+      <TextInput
+        style={inputStyle}
+        placeholder="현재 비밀번호"
+        placeholderTextColor={theme.textSecondary}
+        secureTextEntry
+        value={currentPassword}
+        onChangeText={setCurrentPassword}
+        onSubmitEditing={onWithdraw}
+      />
+      {!!error && <ThemedText type="small" style={styles.error}>{error}</ThemedText>}
+      <Pressable
+        accessibilityRole="button"
+        disabled={loading}
+        onPress={onWithdraw}
+        style={({ pressed }) => [styles.button, styles.withdraw, (pressed || loading) && styles.pressed]}>
+        <ThemedText style={styles.withdrawText}>{loading ? '탈퇴 중...' : '회원탈퇴'}</ThemedText>
+      </Pressable>
+    </ThemedView>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -202,5 +250,12 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
+  },
+  withdraw: {
+    borderWidth: 1,
+    borderColor: '#e5484d',
+  },
+  withdrawText: {
+    color: '#e5484d',
   },
 });

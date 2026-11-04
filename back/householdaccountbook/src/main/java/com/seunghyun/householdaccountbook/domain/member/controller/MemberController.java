@@ -5,6 +5,7 @@ import com.seunghyun.householdaccountbook.domain.member.dto.request.LoginRequest
 import com.seunghyun.householdaccountbook.domain.member.dto.request.ResetPasswordRequestDto;
 import com.seunghyun.householdaccountbook.domain.member.dto.request.SignUpRequestDto;
 import com.seunghyun.householdaccountbook.domain.member.dto.request.UpdateMemberRequestDto;
+import com.seunghyun.householdaccountbook.domain.member.dto.request.WithdrawRequestDto;
 import com.seunghyun.householdaccountbook.domain.member.dto.response.FindIdResponseDto;
 import com.seunghyun.householdaccountbook.domain.member.dto.response.LoginResponseDto;
 import com.seunghyun.householdaccountbook.domain.member.dto.response.MemberInfoResponseDto;
@@ -89,8 +90,9 @@ public class MemberController {
     }
 
     @PatchMapping("/member/withdraw")
-    public ResponseEntity<?> withdraw(@AuthenticationPrincipal String id) {
-        memberService.withdraw(id);
+    public ResponseEntity<?> withdraw(@AuthenticationPrincipal String id,
+                                      @RequestBody WithdrawRequestDto withdrawDto) {
+        memberService.withdraw(id, withdrawDto.getCurrentPassword());
         return ResponseEntity.ok("회원탈퇴 완료");
     }
 }

@@ -31,4 +31,8 @@ export type MemberInfo = { id: string; name: string; phoneNumber: string };
 export const getMemberInfo = () => get<MemberInfo>('/member/info');
 
 export const updateMember = (data: UpdateMemberRequest) => patch<string>('/member/update', data);
-export const withdraw = () => patch<string>('/member/withdraw');
+// On success the session ends; the root layout's guard then sends the user to login.
+export async function withdraw(currentPassword: string) {
+  await patch<string>('/member/withdraw', { currentPassword });
+  await logout();
+}

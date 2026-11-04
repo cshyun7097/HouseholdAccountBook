@@ -177,4 +177,17 @@ class MemberServiceImplTest {
         assertThrows(IllegalArgumentException.class, () -> memberService.updateMember("user", "old", null, " "));
         assertTrue(member.matchPassword("old"));
     }
+
+    @Test
+    void 비밀번호가_맞아야_탈퇴한다() {
+        Member member = activeMember();
+        member.updatePassword("old");
+        when(memberRepository.findById("user")).thenReturn(Optional.of(member));
+
+        assertThrows(IllegalArgumentException.class, () -> memberService.withdraw("user", "wrong"));
+        assertEquals(WithDrawalStatus.ACTIVE, member.getWithDrawalStatus());
+
+        memberService.withdraw("user", "old");
+        assertEquals(WithDrawalStatus.INACTIVE, member.getWithDrawalStatus());
+    }
 }

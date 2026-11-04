@@ -111,9 +111,13 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     @Transactional
-    public void withdraw(String id) {
+    public void withdraw(String id, String currentPassword) {
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아이디입니다."));
+        // 토큰만 탈취돼도 탈퇴되지 않도록 비밀번호를 다시 확인한다
+        if (currentPassword == null || !member.matchPassword(currentPassword)) {
+            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+        }
         member.setWithDrawalStatus(WithDrawalStatus.INACTIVE);
     }
 
