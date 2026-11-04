@@ -18,4 +18,9 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     @Modifying
     @Query("update Account a set a.balance = a.balance + :amount where a.accountId = :accountId and a.balance + :amount >= 0")
     int changeBalance(Long accountId, Long amount);
+
+    // 기존 가계부를 고치거나 지울 때는 실제 기록대로 반영해야 하므로 음수가 되어도 막지 않는다
+    @Modifying
+    @Query("update Account a set a.balance = a.balance + :amount where a.accountId = :accountId")
+    int addBalance(Long accountId, Long amount);
 }

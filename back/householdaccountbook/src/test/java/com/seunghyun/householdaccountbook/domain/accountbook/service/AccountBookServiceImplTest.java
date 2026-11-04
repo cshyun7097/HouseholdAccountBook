@@ -52,21 +52,20 @@ class AccountBookServiceImplTest {
     @Test
     void 지출_금액을_늘리면_차액만큼_뺀다() {
         givenAccountBook(AccountBookType.EXPENSE, 1000);
-        when(accountRepository.changeBalance(10L, -500L)).thenReturn(1);
 
         accountBookService.updateAccountBook("user", 1L, 2L, "점심", 1500L, AccountBookType.EXPENSE);
 
-        verify(accountRepository).changeBalance(10L, -500L);
+        verify(accountRepository).addBalance(10L, -500L);
     }
 
     @Test
     void 지출을_수입으로_바꾸면_두배만큼_더한다() {
         AccountBook accountBook = givenAccountBook(AccountBookType.EXPENSE, 1000);
-        when(accountRepository.changeBalance(10L, 2000L)).thenReturn(1);
 
         accountBookService.updateAccountBook("user", 1L, 2L, "환불", 1000L, AccountBookType.INCOME);
 
         assertEquals(AccountBookType.INCOME, accountBook.getType());
+        verify(accountRepository).addBalance(10L, 2000L);
     }
 
     @Test
@@ -75,17 +74,33 @@ class AccountBookServiceImplTest {
 
         accountBookService.updateAccountBook("user", 1L, 2L, "이름만 수정", 1000L, AccountBookType.INCOME);
 
-        verify(accountRepository, never()).changeBalance(anyLong(), anyLong());
+        verify(accountRepository, never()).addBalance(anyLong(), anyLong());
     }
 
     @Test
-    void 잔액이_부족하면_수정하지_않는다() {
-        AccountBook accountBook = givenAccountBook(AccountBookType.INCOME, 1000);
-        when(accountRepository.changeBalance(10L, -1000L)).thenReturn(0);
+    void 수정값이_잘못되면_수정하지_않는다() {
+        AccountBook accountBook = AccountBook.builder().price(1000L).type(AccountBookType.INCOME).build();
+        lenient().when(accountBookRepository.findByAccountBookIdAndMember_Id(1L, "user")).thenReturn(Optional.of(accountBook));
 
-        assertThrows(IllegalArgumentException.class, () ->
-                accountBookService.updateAccountBook("user", 1L, 2L, "월급", 0L, AccountBookType.INCOME));
+        assertThrows(IllegalArgumentException.class, () -> accountBookService.updateAccountBook("user", 1L, 2L, "월급", null, AccountBookType.INCOME));
+        assertThrows(IllegalArgumentException.class, () -> accountBookService.updateAccountBook("user", 1L, 2L, "월급", -500L, AccountBookType.INCOME));
+        assertThrows(IllegalArgumentException.class, () -> accountBookService.updateAccountBook("user", 1L, 2L, " ", 500L, AccountBookType.INCOME));
+        assertThrows(IllegalArgumentException.class, () -> accountBookService.updateAccountBook("user", 1L, 2L, "월급", 500L, null));
         assertEquals(1000L, accountBook.getPrice());
+        verify(accountRepository, never()).addBalance(anyLong(), anyLong());
+    }
+
+    @Test
+    void 수입_내역을_지우면_잔액에서_빼고_음수여도_지운다() {
+        AccountBook accountBook = AccountBook.builder().accountBookId(1L).type(AccountBookType.INCOME).price(1000L)
+                .account(Account.builder().accountId(10L).build()).build();
+        when(accountBookRepository.findByAccountBookIdAndMember_Id(1L, "user")).thenReturn(Optional.of(accountBook));
+
+        accountBookService.deleteAccountBook("user", 1L);
+
+        verify(accountRepository).addBalance(10L, -1000L);
+        verify(accountRepository, never()).changeBalance(anyLong(), anyLong());
+        verify(accountBookRepository).delete(accountBook);
     }
 
     @Test

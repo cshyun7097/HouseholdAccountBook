@@ -1,6 +1,7 @@
 package com.seunghyun.householdaccountbook.global.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<?> handleIllegalArgument(IllegalArgumentException e) {
         return toResponse(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
+    // 컬럼 길이(255자) 초과, 동시 가입으로 인한 아이디 중복 등 DB 제약 위반
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<?> handleDataIntegrity(DataIntegrityViolationException e) {
+        log.warn("DB 제약 위반: {}", e.getMostSpecificCause().getMessage());
+        return toResponse(HttpStatus.BAD_REQUEST, "입력값이 너무 길거나 이미 사용 중인 값입니다.");
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

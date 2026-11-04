@@ -144,6 +144,31 @@ class MemberServiceImplTest {
     }
 
     @Test
+    void 아이디가_없거나_비밀번호가_틀리면_같은_메시지() {
+        Member member = activeMember();
+        member.updatePassword("old");
+        when(memberRepository.findById("user")).thenReturn(Optional.of(member));
+        when(memberRepository.findById("nobody")).thenReturn(Optional.empty());
+
+        String wrongPassword = assertThrows(IllegalArgumentException.class, () -> memberService.login("user", "wrong")).getMessage();
+        String noId = assertThrows(IllegalArgumentException.class, () -> memberService.login("nobody", "old")).getMessage();
+        assertEquals(wrongPassword, noId);
+    }
+
+    @Test
+    void 회원정보_수정과_재설정에도_가입_규칙을_적용한다() {
+        Member member = activeMember();
+        member.updatePassword("old");
+        when(memberRepository.findById("user")).thenReturn(Optional.of(member));
+
+        assertThrows(IllegalArgumentException.class, () -> memberService.updateMember("user", "old", "010-1234-5678", null));
+        assertThrows(IllegalArgumentException.class, () -> memberService.updateMember("user", "old", null, "a".repeat(21)));
+        assertThrows(IllegalArgumentException.class, () -> memberService.resetPassword("user", "이름", "01012345678", "a".repeat(21)));
+        assertEquals("01012345678", member.getPhoneNumber());
+        assertTrue(member.matchPassword("old"));
+    }
+
+    @Test
     void 새_비밀번호가_빈_값이면_바꾸지_않는다() {
         Member member = activeMember();
         member.updatePassword("old");

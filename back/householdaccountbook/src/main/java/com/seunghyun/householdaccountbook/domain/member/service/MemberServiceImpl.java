@@ -24,12 +24,8 @@ public class MemberServiceImpl implements MemberService {
         if (isBlank(member.getName()) || isBlank(member.getId()) || isBlank(member.getPassword()) || isBlank(member.getPhoneNumber())) {
             throw new IllegalArgumentException("모든 항목을 입력해주세요.");
         }
-        if (!member.getPhoneNumber().matches("\\d{11}")) {
-            throw new IllegalArgumentException("휴대폰번호는 숫자 11자리로 입력해주세요.");
-        }
-        if (member.getPassword().length() > 20) {
-            throw new IllegalArgumentException("비밀번호는 20자 이내로 입력해주세요.");
-        }
+        validatePhoneNumber(member.getPhoneNumber());
+        validatePassword(member.getPassword());
         if (!checkId(member.getId())) {
             throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
         }
@@ -39,12 +35,10 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public Member login(String id, String password) {
+        // 아이디와 비밀번호 중 무엇이 틀렸는지 알려주지 않는다
         Member member = memberRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아이디입니다."));
-
-        if (!member.matchPassword(password)) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
-        }
+                .filter(m -> password != null && m.matchPassword(password))
+                .orElseThrow(() -> new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다."));
 
         if (member.getWithDrawalStatus() != WithDrawalStatus.ACTIVE) {
             throw new IllegalArgumentException("탈퇴한 회원입니다.");
@@ -76,6 +70,7 @@ public class MemberServiceImpl implements MemberService {
         if (newPassword == null || newPassword.isBlank()) {
             throw new IllegalArgumentException("새 비밀번호를 입력해주세요.");
         }
+        validatePassword(newPassword);
         // 어느 항목이 틀렸는지 알려주지 않아야 아이디 존재 여부가 드러나지 않는다
         Member member = memberRepository.findById(id)
                 .filter(m -> m.getName().equals(name) && m.getPhoneNumber().equals(phoneNumber)
@@ -105,9 +100,11 @@ public class MemberServiceImpl implements MemberService {
             throw new IllegalArgumentException("변경할 값을 입력해주세요.");
         }
         if (phoneNumber != null) {
+            validatePhoneNumber(phoneNumber);
             member.setPhoneNumber(phoneNumber);
         }
         if (password != null) {
+            validatePassword(password);
             member.updatePassword(password);
         }
     }
@@ -118,6 +115,18 @@ public class MemberServiceImpl implements MemberService {
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아이디입니다."));
         member.setWithDrawalStatus(WithDrawalStatus.INACTIVE);
+    }
+
+    private static void validatePhoneNumber(String phoneNumber) {
+        if (!phoneNumber.matches("\\d{11}")) {
+            throw new IllegalArgumentException("휴대폰번호는 숫자 11자리로 입력해주세요.");
+        }
+    }
+
+    private static void validatePassword(String password) {
+        if (password.length() > 20) {
+            throw new IllegalArgumentException("비밀번호는 20자 이내로 입력해주세요.");
+        }
     }
 
     private static boolean isBlank(String value) {

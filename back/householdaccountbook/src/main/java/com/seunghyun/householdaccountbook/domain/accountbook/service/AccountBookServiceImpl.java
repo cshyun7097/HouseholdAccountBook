@@ -45,11 +45,7 @@ public class AccountBookServiceImpl implements AccountBookService {
     @Override
     @Transactional
     public void addAccountBook(String id, Long categoryId, Long accountId, AccountBook accountBook) {
-        // 음수 금액은 잔액 계산을 뒤집으므로 막는다
-        if (accountBook.getContent() == null || accountBook.getContent().isBlank()
-                || accountBook.getPrice() == null || accountBook.getPrice() <= 0 || accountBook.getType() == null) {
-            throw new IllegalArgumentException("내용, 0보다 큰 금액, 수입/지출을 모두 입력해주세요.");
-        }
+        validate(accountBook.getContent(), accountBook.getPrice(), accountBook.getType());
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아이디입니다."));
 
@@ -120,6 +116,7 @@ public class AccountBookServiceImpl implements AccountBookService {
     @Override
     @Transactional
     public void updateAccountBook(String id, Long accountBookId, Long categoryId, String content, Long price, AccountBookType type) {
+        validate(content, price, type);
         AccountBook accountBook = accountBookRepository.findByAccountBookIdAndMember_Id(accountBookId, id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 가계부입니다."));
 
@@ -129,7 +126,7 @@ public class AccountBookServiceImpl implements AccountBookService {
         // 기존 내역이 잔액에 준 영향과 수정 후 영향의 차이만큼만 반영한다
         long diff = balanceEffect(type, price) - balanceEffect(accountBook.getType(), accountBook.getPrice());
         if (diff != 0) {
-            changeBalance(accountBook.getAccount().getAccountId(), diff);
+            accountRepository.addBalance(accountBook.getAccount().getAccountId(), diff);
         }
 
         accountBook.setCategory(category);
@@ -145,8 +142,16 @@ public class AccountBookServiceImpl implements AccountBookService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 가계부입니다."));
 
         // 추가할 때 반영한 만큼 되돌린다
-        changeBalance(accountBook.getAccount().getAccountId(), -balanceEffect(accountBook.getType(), accountBook.getPrice()));
+        // 이미 쓴 수입을 지우면 잔액이 음수가 될 수 있지만, 잘못 쓴 내역은 지울 수 있어야 한다
+        accountRepository.addBalance(accountBook.getAccount().getAccountId(), -balanceEffect(accountBook.getType(), accountBook.getPrice()));
         accountBookRepository.delete(accountBook);
+    }
+
+    // 음수 금액은 잔액 계산을 뒤집으므로 막는다
+    private static void validate(String content, Long price, AccountBookType type) {
+        if (content == null || content.isBlank() || price == null || price <= 0 || type == null) {
+            throw new IllegalArgumentException("내용, 0보다 큰 금액, 수입/지출을 모두 입력해주세요.");
+        }
     }
 
     // 수입이면 더하고 지출이면 뺀다

@@ -29,6 +29,9 @@ public class AccountServiceImpl implements AccountService {
                 || isBlank(account.getAccountNumber()) || account.getBalance() == null) {
             throw new IllegalArgumentException("통장 정보를 모두 입력해주세요.");
         }
+        if (account.getBalance() < 0) {
+            throw new IllegalArgumentException("잔액은 0 이상이어야 합니다.");
+        }
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아이디입니다."));
 
@@ -51,6 +54,9 @@ public class AccountServiceImpl implements AccountService {
     public void updateBalance(String id, Long accountId, Long balance) {
         if (balance == null) {
             throw new IllegalArgumentException("잔액을 입력해주세요.");
+        }
+        if (balance < 0) {
+            throw new IllegalArgumentException("잔액은 0 이상이어야 합니다.");
         }
         // 본인 계좌만 조회해서 남의 계좌 잔액 변경을 막는다
         Account account = accountRepository.findByAccountIdAndMember_Id(accountId, id)

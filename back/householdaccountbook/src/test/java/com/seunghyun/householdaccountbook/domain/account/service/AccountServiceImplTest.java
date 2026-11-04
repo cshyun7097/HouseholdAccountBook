@@ -78,6 +78,14 @@ class AccountServiceImplTest {
     }
 
     @Test
+    void 잔액을_음수로_설정하거나_만들지_않는다() {
+        assertThrows(IllegalArgumentException.class, () -> accountService.updateBalance("user", 1L, -1L));
+        Account account = Account.builder().accountNumber("1234567890").bankInfo("은행").accountName("월급").balance(-1L).build();
+        assertThrows(IllegalArgumentException.class, () -> accountService.createAccount("user", account));
+        verify(accountRepository, never()).save(any());
+    }
+
+    @Test
     void 잔액_수정값이_없으면_예외() {
         assertThrows(IllegalArgumentException.class, () -> accountService.updateBalance("user", 1L, null));
     }

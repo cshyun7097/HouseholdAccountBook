@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { onlyDigits } from '@/utils/money';
 
 export default function MyPageScreen() {
   const theme = useTheme();
@@ -51,7 +52,8 @@ export default function MyPageScreen() {
         <UpdateForm
           title="휴대폰번호 변경"
           inputStyle={inputStyle}
-          fields={[{ key: 'phoneNumber', placeholder: '새 휴대폰번호', keyboardType: 'phone-pad' }]}
+          fields={[{ key: 'phoneNumber', placeholder: '새 휴대폰번호 (숫자 11자리)', keyboardType: 'phone-pad', maxLength: 11, digitsOnly: true }]}
+          validate={(v) => (v.phoneNumber.length !== 11 ? '휴대폰번호는 숫자 11자리로 입력해주세요.' : '')}
           toRequest={(v) => ({ phoneNumber: v.phoneNumber })}
           onDone={(v) => info && setInfo({ ...info, phoneNumber: v.phoneNumber })}
           doneMessage="휴대폰번호가 변경되었습니다."
@@ -61,8 +63,8 @@ export default function MyPageScreen() {
           title="비밀번호 변경"
           inputStyle={inputStyle}
           fields={[
-            { key: 'password', placeholder: '새 비밀번호', secure: true },
-            { key: 'passwordConfirm', placeholder: '새 비밀번호 확인', secure: true },
+            { key: 'password', placeholder: '새 비밀번호 (20자 이내)', secure: true, maxLength: 20 },
+            { key: 'passwordConfirm', placeholder: '새 비밀번호 확인', secure: true, maxLength: 20 },
           ]}
           validate={(v) => (v.password !== v.passwordConfirm ? '새 비밀번호가 서로 다릅니다.' : '')}
           toRequest={(v) => ({ password: v.password })}
@@ -73,7 +75,7 @@ export default function MyPageScreen() {
   );
 }
 
-type Field = { key: string; placeholder: string; secure?: boolean; keyboardType?: 'phone-pad' };
+type Field = { key: string; placeholder: string; secure?: boolean; keyboardType?: 'phone-pad'; maxLength?: number; digitsOnly?: boolean };
 
 // Both changes need the current password (the backend checks it), so each form carries its own.
 function UpdateForm({
@@ -130,8 +132,9 @@ function UpdateForm({
           placeholderTextColor={theme.textSecondary}
           secureTextEntry={f.secure}
           keyboardType={f.keyboardType}
+          maxLength={f.maxLength}
           value={values[f.key] ?? ''}
-          onChangeText={(text) => setValues({ ...values, [f.key]: text })}
+          onChangeText={(text) => setValues({ ...values, [f.key]: f.digitsOnly ? onlyDigits(text) : text })}
         />
       ))}
       <TextInput

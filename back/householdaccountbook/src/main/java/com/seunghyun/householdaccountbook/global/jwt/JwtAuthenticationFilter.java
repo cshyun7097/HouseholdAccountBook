@@ -4,6 +4,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import com.seunghyun.householdaccountbook.domain.member.entity.WithDrawalStatus;
+import com.seunghyun.householdaccountbook.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -22,6 +24,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final MemberRepository memberRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -31,6 +34,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (token != null && jwtTokenProvider.validateToken(token)) {
             String memberId = jwtTokenProvider.getMemberId(token);
+            // 탈퇴한 회원의 토큰은 만료 전이라도 인증하지 않는다 (401)
+            boolean active = memberRepository.findById(memberId)
+                    .filter(m -> m.getWithDrawalStatus() == WithDrawalStatus.ACTIVE).isPresent();
+            if (!active) {
+                filterChain.doFilter(request, response);
+                return;
+            }
             Authentication authentication =
                     new UsernamePasswordAuthenticationToken(memberId, null, Collections.emptyList());
             SecurityContextHolder.getContext().setAuthentication(authentication);
