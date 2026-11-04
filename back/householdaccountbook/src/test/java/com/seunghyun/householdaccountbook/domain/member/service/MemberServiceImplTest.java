@@ -23,36 +23,35 @@ import static org.mockito.Mockito.*;
 class MemberServiceImplTest {
 
     @Mock MemberRepository memberRepository;
-    @Mock EmailVerificationService emailVerificationService;
     @InjectMocks MemberServiceImpl memberService;
 
     private Member newMember() {
-        return Member.builder().id("user").password("pw").name("이름").phoneNumber("01012345678").email("a@b.com").build();
+        return Member.builder().id("user").password("pw").name("이름").phoneNumber("01012345678").build();
     }
 
     @Test
     void 휴대폰번호가_숫자_11자리가_아니면_가입하지_않는다() {
         for (String phone : List.of("0101234567", "010123456789", "010-1234-5678")) {
-            Member member = Member.builder().id("user").password("pw").name("이름").phoneNumber(phone).email("a@b.com").build();
-            assertThrows(IllegalArgumentException.class, () -> memberService.signUp(member, "123456"));
+            Member member = Member.builder().id("user").password("pw").name("이름").phoneNumber(phone).build();
+            assertThrows(IllegalArgumentException.class, () -> memberService.signUp(member));
         }
         verify(memberRepository, never()).save(any());
     }
 
     @Test
     void 비밀번호가_20자를_넘으면_가입하지_않는다() {
-        Member member = Member.builder().id("user").password("a".repeat(21)).name("이름").phoneNumber("01012345678").email("a@b.com").build();
+        Member member = Member.builder().id("user").password("a".repeat(21)).name("이름").phoneNumber("01012345678").build();
 
-        assertThrows(IllegalArgumentException.class, () -> memberService.signUp(member, "123456"));
+        assertThrows(IllegalArgumentException.class, () -> memberService.signUp(member));
         verify(memberRepository, never()).save(any());
     }
 
     @Test
     void 비밀번호가_20자면_가입한다() {
         when(memberRepository.findById("user")).thenReturn(Optional.empty());
-        Member member = Member.builder().id("user").password("a".repeat(20)).name("이름").phoneNumber("01012345678").email("a@b.com").build();
+        Member member = Member.builder().id("user").password("a".repeat(20)).name("이름").phoneNumber("01012345678").build();
 
-        memberService.signUp(member, "123456");
+        memberService.signUp(member);
 
         verify(memberRepository).save(member);
     }
@@ -61,7 +60,7 @@ class MemberServiceImplTest {
     void 새_아이디면_가입한다() {
         when(memberRepository.findById("user")).thenReturn(Optional.empty());
 
-        memberService.signUp(newMember(), "123456");
+        memberService.signUp(newMember());
 
         verify(memberRepository).save(any(Member.class));
     }
@@ -70,91 +69,56 @@ class MemberServiceImplTest {
     void 이미_있는_아이디면_가입하지_않는다() {
         when(memberRepository.findById("user")).thenReturn(Optional.of(newMember()));
 
-        assertThrows(IllegalArgumentException.class, () -> memberService.signUp(newMember(), "123456"));
+        assertThrows(IllegalArgumentException.class, () -> memberService.signUp(newMember()));
         verify(memberRepository, never()).save(any());
     }
 
     @Test
-    void 이메일_인증번호가_틀리면_가입하지_않는다() {
-        when(memberRepository.findById("user")).thenReturn(Optional.empty());
-        doThrow(IllegalArgumentException.class).when(emailVerificationService).verifyCode("a@b.com", "000000");
-
-        assertThrows(IllegalArgumentException.class, () -> memberService.signUp(newMember(), "000000"));
-        verify(memberRepository, never()).save(any());
-    }
-
-    @Test
-    void 이메일이_없으면_가입하지_않는다() {
-        Member member = Member.builder().id("user").password("pw").name("이름").phoneNumber("01012345678").build();
-
-        assertThrows(IllegalArgumentException.class, () -> memberService.signUp(member, "123456"));
-        verify(memberRepository, never()).save(any());
-    }
-
-    @Test
-    void 이메일_인증이_되면_활성_회원의_아이디를_찾는다() {
-        when(memberRepository.findAllByEmailAndWithDrawalStatus("a@b.com", WithDrawalStatus.ACTIVE))
+    void 이름과_휴대폰번호로_활성_회원의_아이디를_찾는다() {
+        when(memberRepository.findAllByNameAndPhoneNumberAndWithDrawalStatus("이름", "01012345678", WithDrawalStatus.ACTIVE))
                 .thenReturn(List.of(newMember()));
 
-        assertEquals(List.of("user"), memberService.findIds("a@b.com", "123456"));
-        verify(emailVerificationService).verifyCode("a@b.com", "123456");
-    }
-
-    @Test
-    void 이메일_인증번호가_틀리면_아이디를_알려주지_않는다() {
-        doThrow(IllegalArgumentException.class).when(emailVerificationService).verifyCode("a@b.com", "000000");
-
-        assertThrows(IllegalArgumentException.class, () -> memberService.findIds("a@b.com", "000000"));
-        verify(memberRepository, never()).findAllByEmailAndWithDrawalStatus(any(), any());
+        assertEquals(List.of("user"), memberService.findIds("이름", "01012345678"));
     }
 
     @Test
     void 일치하는_회원이_없으면_예외() {
-        when(memberRepository.findAllByEmailAndWithDrawalStatus("none@b.com", WithDrawalStatus.ACTIVE))
+        when(memberRepository.findAllByNameAndPhoneNumberAndWithDrawalStatus("이름", "01000000000", WithDrawalStatus.ACTIVE))
                 .thenReturn(List.of());
 
-        assertThrows(IllegalArgumentException.class, () -> memberService.findIds("none@b.com", "123456"));
+        assertThrows(IllegalArgumentException.class, () -> memberService.findIds("이름", "01000000000"));
     }
 
     private Member activeMember() {
-        return Member.builder().id("user").password("old").name("이름").phoneNumber("01012345678").email("a@b.com")
+        return Member.builder().id("user").password("old").name("이름").phoneNumber("01012345678")
                 .withDrawalStatus(WithDrawalStatus.ACTIVE).build();
     }
 
     @Test
-    void 이메일_인증이_되면_비밀번호를_재설정한다() {
+    void 정보가_모두_맞으면_비밀번호를_재설정한다() {
         Member member = activeMember();
         when(memberRepository.findById("user")).thenReturn(Optional.of(member));
 
-        memberService.resetPassword("user", "a@b.com", "123456", "new");
+        memberService.resetPassword("user", "이름", "01012345678", "new");
 
         assertTrue(member.matchPassword("new"));
     }
 
     @Test
-    void 회원의_이메일이_아니면_재설정하지_않는다() {
+    void 전화번호가_다르면_재설정하지_않는다() {
         Member member = activeMember();
         member.updatePassword("old");
         when(memberRepository.findById("user")).thenReturn(Optional.of(member));
 
         assertThrows(IllegalArgumentException.class,
-                () -> memberService.resetPassword("user", "other@b.com", "123456", "new"));
+                () -> memberService.resetPassword("user", "이름", "01000000000", "new"));
         assertFalse(member.matchPassword("new"));
-    }
-
-    @Test
-    void 이메일_인증번호가_틀리면_재설정하지_않는다() {
-        doThrow(IllegalArgumentException.class).when(emailVerificationService).verifyCode("a@b.com", "000000");
-
-        assertThrows(IllegalArgumentException.class,
-                () -> memberService.resetPassword("user", "a@b.com", "000000", "new"));
-        verify(memberRepository, never()).findById(any(String.class));
     }
 
     @Test
     void 새_비밀번호가_비어있으면_예외() {
         assertThrows(IllegalArgumentException.class,
-                () -> memberService.resetPassword("user", "a@b.com", "123456", " "));
+                () -> memberService.resetPassword("user", "이름", "01012345678", " "));
     }
 
     @Test

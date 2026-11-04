@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ApiError } from '@/api/client';
 import { login, signUp } from '@/api/member';
-import { EmailCodeField } from '@/components/email-code-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -16,21 +15,19 @@ export default function SignUpScreen() {
   const theme = useTheme();
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function onSignUp() {
-    if (!name || !phoneNumber || !email || !code || !id || !password) return setError('모든 항목을 입력해주세요.');
+    if (!name || !phoneNumber || !id || !password) return setError('모든 항목을 입력해주세요.');
     if (phoneNumber.length !== 11) return setError('휴대폰번호는 숫자 11자리로 입력해주세요.');
     if (password.length > 20) return setError('비밀번호는 20자 이내로 입력해주세요.');
     setError('');
     setLoading(true);
     try {
-      await signUp({ name, phoneNumber, email, code, id, password });
+      await signUp({ name, phoneNumber, id, password });
       await login(id, password);
       router.replace('/home');
     } catch (e) {
@@ -66,7 +63,6 @@ export default function SignUpScreen() {
             value={phoneNumber}
             onChangeText={(t) => setPhoneNumber(onlyDigits(t))}
           />
-          <EmailCodeField email={email} onChangeEmail={setEmail} code={code} onChangeCode={setCode} />
           <TextInput
             style={inputStyle}
             placeholder="아이디"

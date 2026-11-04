@@ -15,15 +15,6 @@ spring:
         format_sql: true
     hibernate:
       ddl-auto: validate	# 실서버에서는 validate로 설정해야 한다!
-  # 인증번호 메일 발송 (Gmail은 계정 비밀번호가 아니라 앱 비밀번호를 넣는다)
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail.smtp.auth: true
-      mail.smtp.starttls.enable: true
 
 server:
   servlet:

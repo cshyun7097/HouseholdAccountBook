@@ -17,13 +17,11 @@ import java.util.Optional;
 public class MemberServiceImpl implements MemberService {
 
     private final MemberRepository memberRepository;
-    private final EmailVerificationService emailVerificationService;
 
     @Override
-    public void signUp(Member member, String code) {
+    public void signUp(Member member) {
         // 프론트와 같은 규칙: 화면을 거치지 않은 요청도 막는다
-        if (isBlank(member.getName()) || isBlank(member.getId()) || isBlank(member.getPassword()) || isBlank(member.getPhoneNumber())
-                || isBlank(member.getEmail())) {
+        if (isBlank(member.getName()) || isBlank(member.getId()) || isBlank(member.getPassword()) || isBlank(member.getPhoneNumber())) {
             throw new IllegalArgumentException("모든 항목을 입력해주세요.");
         }
         if (!member.getPhoneNumber().matches("\\d{11}")) {
@@ -35,8 +33,6 @@ public class MemberServiceImpl implements MemberService {
         if (!checkId(member.getId())) {
             throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
         }
-        // 입력값 검사를 다 통과한 뒤에 확인해야, 아이디 중복 같은 이유로 인증번호가 헛되이 소모되지 않는다
-        emailVerificationService.verifyCode(member.getEmail(), code);
         member.updatePassword(member.getPassword());
         memberRepository.save(member);
     }
@@ -64,10 +60,9 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    public List<String> findIds(String email, String code) {
-        emailVerificationService.verifyCode(email, code);
+    public List<String> findIds(String name, String phoneNumber) {
         List<String> ids = memberRepository
-                .findAllByEmailAndWithDrawalStatus(email, WithDrawalStatus.ACTIVE)
+                .findAllByNameAndPhoneNumberAndWithDrawalStatus(name, phoneNumber, WithDrawalStatus.ACTIVE)
                 .stream().map(Member::getId).toList();
         if (ids.isEmpty()) {
             throw new IllegalArgumentException("일치하는 회원이 없습니다.");
@@ -77,14 +72,13 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     @Transactional
-    public void resetPassword(String id, String email, String code, String newPassword) {
+    public void resetPassword(String id, String name, String phoneNumber, String newPassword) {
         if (newPassword == null || newPassword.isBlank()) {
             throw new IllegalArgumentException("새 비밀번호를 입력해주세요.");
         }
-        // 인증을 먼저 해야 인증번호 없이 아이디·이메일 조합을 떠볼 수 없다
-        emailVerificationService.verifyCode(email, code);
+        // 어느 항목이 틀렸는지 알려주지 않아야 아이디 존재 여부가 드러나지 않는다
         Member member = memberRepository.findById(id)
-                .filter(m -> email.equals(m.getEmail())
+                .filter(m -> m.getName().equals(name) && m.getPhoneNumber().equals(phoneNumber)
                         && m.getWithDrawalStatus() == WithDrawalStatus.ACTIVE)
                 .orElseThrow(() -> new IllegalArgumentException("일치하는 회원이 없습니다."));
         member.updatePassword(newPassword);

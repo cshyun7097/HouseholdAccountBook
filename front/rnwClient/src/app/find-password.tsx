@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ApiError } from '@/api/client';
 import { resetPassword } from '@/api/member';
-import { EmailCodeField } from '@/components/email-code-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -14,19 +13,19 @@ import { useTheme } from '@/hooks/use-theme';
 export default function FindPasswordScreen() {
   const theme = useTheme();
   const [id, setId] = useState('');
-  const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
+  const [name, setName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function onReset() {
-    if (!id || !email || !code || !newPassword) return setError('모든 항목을 입력해주세요.');
+    if (!id || !name || !phoneNumber || !newPassword) return setError('모든 항목을 입력해주세요.');
     setError('');
     setLoading(true);
     try {
-      await resetPassword({ id, email, code, newPassword });
+      await resetPassword({ id, name, phoneNumber, newPassword });
       setDone(true);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : '서버에 연결할 수 없습니다.');
@@ -61,7 +60,21 @@ export default function FindPasswordScreen() {
                 value={id}
                 onChangeText={setId}
               />
-              <EmailCodeField email={email} onChangeEmail={setEmail} code={code} onChangeCode={setCode} />
+              <TextInput
+                style={inputStyle}
+                placeholder="이름"
+                placeholderTextColor={theme.textSecondary}
+                value={name}
+                onChangeText={setName}
+              />
+              <TextInput
+                style={inputStyle}
+                placeholder="휴대폰번호"
+                placeholderTextColor={theme.textSecondary}
+                keyboardType="phone-pad"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+              />
               <TextInput
                 style={inputStyle}
                 placeholder="새 비밀번호"
