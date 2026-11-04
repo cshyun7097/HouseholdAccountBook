@@ -45,3 +45,5 @@ export type Dashboard = {
   categories: { categoryName: string; total: number }[]; // this month's expenses, largest first
 };
 export const getDashboard = () => get<Dashboard>('/accountbook/dashboard');
+export const getExpenseByCategory = (month: string) =>
+  get<Dashboard['categories']>(`/accountbook/dashboard/categories?month=${month}`);

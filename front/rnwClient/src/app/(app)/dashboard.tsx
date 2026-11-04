@@ -1,9 +1,9 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { type Dashboard, getDashboard } from '@/api/accountbook';
+import { type Dashboard, getDashboard, getExpenseByCategory } from '@/api/accountbook';
 import { authedErrorMessage } from '@/api/auth-error';
 import { AppHeader } from '@/components/app-menu';
 import { ThemedText } from '@/components/themed-text';
@@ -18,6 +18,11 @@ const MAX_SLICES = 5; // more slices than this are unreadable; the rest fold int
 
 const won = (n: number) => `${n.toLocaleString('ko-KR')}원`;
 const monthLabel = (yyyyMM: string) => `${Number(yyyyMM.slice(5))}월`;
+// yyyy-MM shifted by n months
+function shiftMonth(yyyyMM: string, n: number) {
+  const d = new Date(Number(yyyyMM.slice(0, 4)), Number(yyyyMM.slice(5)) - 1 + n, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
 
 // Pie slice from angle a0 to a1 (radians, 0 = 12 o'clock, clockwise).
 function slicePath(r: number, a0: number, a1: number) {
@@ -33,6 +38,8 @@ export default function DashboardScreen() {
   const [data, setData] = useState<Dashboard>();
   const [selected, setSelected] = useState<string>(); // month shown in the readout; undefined = latest
   const [error, setError] = useState('');
+  const [pieMonth, setPieMonth] = useState<string>(); // month of the pie chart; undefined = this month (from the dashboard)
+  const [pieCategories, setPieCategories] = useState<Dashboard['categories']>();
 
   useFocusEffect(
     useCallback(() => {
@@ -44,6 +51,17 @@ export default function DashboardScreen() {
         .catch(async (e) => setError((await authedErrorMessage(e)) ?? ''));
     }, []),
   );
+
+  useEffect(() => {
+    if (!pieMonth) return;
+    let stale = false; // ignore responses for a month the user already moved past
+    getExpenseByCategory(pieMonth)
+      .then((res) => !stale && setPieCategories(res))
+      .catch(async (e) => !stale && setError((await authedErrorMessage(e)) ?? ''));
+    return () => {
+      stale = true;
+    };
+  }, [pieMonth]);
 
   if (!data) {
     return (
@@ -61,8 +79,10 @@ export default function DashboardScreen() {
   const maxBar = Math.max(1, ...data.monthly.flatMap((m) => [m.income, m.expense]));
   const readout = data.monthly.find((m) => m.month === selected) ?? data.monthly[data.monthly.length - 1];
 
-  const top = data.categories.slice(0, MAX_SLICES);
-  const rest = data.categories.slice(MAX_SLICES).reduce((sum, c) => sum + c.total, 0);
+  const shownMonth = pieMonth ?? data.month;
+  const categories = (pieMonth && pieCategories) || data.categories;
+  const top = categories.slice(0, MAX_SLICES);
+  const rest = categories.slice(MAX_SLICES).reduce((sum, c) => sum + c.total, 0);
   const slices = [
     ...top.map((c, i) => ({ name: c.categoryName, total: c.total, color: colors.series[i] })),
     ...(rest > 0 ? [{ name: '기타', total: rest, color: colors.other }] : []),
@@ -115,15 +135,28 @@ export default function DashboardScreen() {
         </ThemedView>
 
         <ThemedView type="backgroundElement" style={styles.card}>
-          <ThemedText type="smallBold">{monthLabel(data.month)} 지출 카테고리</ThemedText>
+          <View style={styles.monthNav}>
+            <Pressable accessibilityRole="button" accessibilityLabel="이전 달" hitSlop={8}
+              onPress={() => setPieMonth(shiftMonth(shownMonth, -1))}>
+              <ThemedText type="smallBold">◀</ThemedText>
+            </Pressable>
+            <ThemedText type="smallBold">
+              {shownMonth.slice(0, 4)}년 {monthLabel(shownMonth)} 지출 카테고리
+            </ThemedText>
+            <Pressable accessibilityRole="button" accessibilityLabel="다음 달" hitSlop={8}
+              disabled={shownMonth >= data.month} style={shownMonth >= data.month && styles.disabled}
+              onPress={() => setPieMonth(shiftMonth(shownMonth, 1))}>
+              <ThemedText type="smallBold">▶</ThemedText>
+            </Pressable>
+          </View>
           {expenseTotal === 0 ? (
             <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
-              이번 달 지출 내역이 없습니다.
+              {monthLabel(shownMonth)} 지출 내역이 없습니다.
             </ThemedText>
           ) : (
             <>
               <View style={styles.pie}>
-                <Svg width={PIE_SIZE} height={PIE_SIZE} accessibilityLabel="이번 달 카테고리별 지출 비율">
+                <Svg width={PIE_SIZE} height={PIE_SIZE} accessibilityLabel={`${monthLabel(shownMonth)} 카테고리별 지출 비율`}>
                   {slices.length === 1 ? (
                     // a single 360° arc collapses to nothing, so draw the full circle instead
                     <Circle cx={PIE_SIZE / 2} cy={PIE_SIZE / 2} r={PIE_SIZE / 2} fill={slices[0].color} />
@@ -240,6 +273,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: Spacing.two,
+  },
+  monthNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  disabled: {
+    opacity: 0.3,
   },
   empty: {
     textAlign: 'center',

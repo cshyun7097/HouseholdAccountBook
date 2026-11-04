@@ -1,5 +1,6 @@
 package com.seunghyun.householdaccountbook.domain.accountbook.service;
 
+import com.seunghyun.householdaccountbook.domain.accountbook.dto.response.CategoryTotal;
 import com.seunghyun.householdaccountbook.domain.accountbook.dto.response.DashboardResponseDto;
 import com.seunghyun.householdaccountbook.domain.accountbook.entity.AccountBook;
 import com.seunghyun.householdaccountbook.domain.accountbook.entity.AccountBookType;
@@ -29,4 +30,6 @@ public interface AccountBookService {
     void deleteAccountBook(String id, Long accountBookId);
 
     DashboardResponseDto getDashboard(String id, YearMonth month);
+
+    List<CategoryTotal> getExpenseByCategory(String id, YearMonth month);
 }

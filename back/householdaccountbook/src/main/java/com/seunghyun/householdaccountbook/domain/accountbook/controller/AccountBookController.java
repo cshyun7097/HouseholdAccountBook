@@ -92,6 +92,13 @@ public class AccountBookController {
         return ResponseEntity.ok(accountBookService.getDashboard(id, YearMonth.now()));
     }
 
+    // month 생략 시 이번 달
+    @GetMapping("/accountbook/dashboard/categories")
+    public ResponseEntity<?> getExpenseByCategory(@AuthenticationPrincipal String id,
+                                                  @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") YearMonth month) {
+        return ResponseEntity.ok(accountBookService.getExpenseByCategory(id, month == null ? YearMonth.now() : month));
+    }
+
     @PatchMapping("/accountbook/update/{accountBookId}")
     public ResponseEntity<?> updateAccountBook(@AuthenticationPrincipal String id,
                                                @PathVariable Long accountBookId,

@@ -2,6 +2,7 @@ package com.seunghyun.householdaccountbook.domain.accountbook.service;
 
 import com.seunghyun.householdaccountbook.domain.account.entity.Account;
 import com.seunghyun.householdaccountbook.domain.account.repository.AccountRepository;
+import com.seunghyun.householdaccountbook.domain.accountbook.dto.response.CategoryTotal;
 import com.seunghyun.householdaccountbook.domain.accountbook.dto.response.DashboardResponseDto;
 import com.seunghyun.householdaccountbook.domain.accountbook.dto.response.MonthlyTotal;
 import com.seunghyun.householdaccountbook.domain.accountbook.entity.AccountBook;
@@ -186,8 +187,13 @@ public class AccountBookServiceImpl implements AccountBookService {
         return DashboardResponseDto.builder()
                 .month(month.toString())
                 .monthly(monthly)
-                .categories(accountBookRepository.sumByCategory(id, AccountBookType.EXPENSE, month.atDay(1), month.atEndOfMonth()))
+                .categories(getExpenseByCategory(id, month))
                 .build();
+    }
+
+    @Override
+    public List<CategoryTotal> getExpenseByCategory(String id, YearMonth month) {
+        return accountBookRepository.sumByCategory(id, AccountBookType.EXPENSE, month.atDay(1), month.atEndOfMonth());
     }
 
     // 조회 기간은 최대 1개월: 종료일은 시작일 + 1개월까지 (1/31 + 1개월 = 2/28, plusMonths가 말일로 맞춘다)
