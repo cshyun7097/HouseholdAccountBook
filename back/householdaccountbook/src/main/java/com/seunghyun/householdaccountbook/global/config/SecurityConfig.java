@@ -56,7 +56,7 @@ public class SecurityConfig {
         config.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*",
                 "http://192.168.*", "http://10.*", "http://172.*",
                 "https://household-account-book-*-seung17.vercel.app",
-                "https://household-account-book-6lf7.vercel.app"));
+                "https://household-account-book-6lf7.vercel.app", "https://household-account-book-five.vercel.app"));
         config.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
