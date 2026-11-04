@@ -48,12 +48,14 @@ public class SecurityConfig {
     // Expo web dev server runs on a different port than the API; native apps don't need CORS.
     // Private LAN ranges let a phone on the same Wi-Fi open the web build via the Mac's address.
     // shortcut: 172.* is wider than the 172.16-31 private range.
-    // Only this one Vercel deployment is allowed; a new deployment URL must be added here.
+    // Only these Vercel deployments are allowed; a new deployment URL must be added here.
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("http://localhost:*",
-                "https://household-account-book-poejfgome-seung17.vercel.app"));
+        config.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*",
+                "http://192.168.*", "http://10.*", "http://172.*",
+                "https://household-account-book-poejfgome-seung17.vercel.app",
+                "https://household-account-book-five.vercel.app"));
         config.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
