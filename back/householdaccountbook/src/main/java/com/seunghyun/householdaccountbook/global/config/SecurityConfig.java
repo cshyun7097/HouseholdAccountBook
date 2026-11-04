@@ -35,7 +35,7 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/member/sign-up", "/member/login", "/member/id-check/*", "/member/find-id", "/member/reset-password", "/error", "/health-check").permitAll()
+                        .requestMatchers("/member/sign-up", "/member/login", "/member/id-check/*", "/member/find-id", "/member/reset-password", "/member/email/send-code", "/error", "/health-check").permitAll()
                         .anyRequest().authenticated()
                 )
                 // 토큰이 없거나 만료되면 기본값인 403 대신 401을 보내서, 앱이 로그인 화면으로 보낼 수 있게 한다

@@ -6,15 +6,15 @@ import java.util.List;
 
 public interface MemberService {
 
-    void signUp(Member member);
+    void signUp(Member member, String code);
 
     Member login(String id, String password);
 
     boolean checkId(String id);
 
-    List<String> findIds(String name, String phoneNumber);
+    List<String> findIds(String email, String code);
 
-    void resetPassword(String id, String name, String phoneNumber, String newPassword);
+    void resetPassword(String id, String email, String code, String newPassword);
 
     void withdraw(String id);
 

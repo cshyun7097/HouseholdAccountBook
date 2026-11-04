@@ -1,10 +1,11 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ApiError } from '@/api/client';
 import { findId } from '@/api/member';
+import { EmailCodeField } from '@/components/email-code-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -12,27 +13,25 @@ import { useTheme } from '@/hooks/use-theme';
 
 export default function FindIdScreen() {
   const theme = useTheme();
-  const [name, setName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
   const [ids, setIds] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function onFindId() {
-    if (!name || !phoneNumber) return setError('이름과 휴대폰번호를 입력해주세요.');
+    if (!email || !code) return setError('이메일과 인증번호를 입력해주세요.');
     setError('');
     setIds([]);
     setLoading(true);
     try {
-      setIds(await findId(name, phoneNumber));
+      setIds(await findId(email, code));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : '서버에 연결할 수 없습니다.');
     } finally {
       setLoading(false);
     }
   }
-
-  const inputStyle = [styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }];
 
   return (
     <ThemedView style={styles.container}>
@@ -41,22 +40,7 @@ export default function FindIdScreen() {
           아이디 찾기
         </ThemedText>
 
-        <TextInput
-          style={inputStyle}
-          placeholder="이름"
-          placeholderTextColor={theme.textSecondary}
-          value={name}
-          onChangeText={setName}
-        />
-        <TextInput
-          style={inputStyle}
-          placeholder="휴대폰번호"
-          placeholderTextColor={theme.textSecondary}
-          keyboardType="phone-pad"
-          value={phoneNumber}
-          onChangeText={setPhoneNumber}
-          onSubmitEditing={onFindId}
-        />
+        <EmailCodeField email={email} onChangeEmail={setEmail} code={code} onChangeCode={setCode} onSubmitEditing={onFindId} />
 
         {!!error && <ThemedText type="small" style={styles.error}>{error}</ThemedText>}
 
@@ -100,12 +84,6 @@ const styles = StyleSheet.create({
   title: {
     textAlign: 'center',
     marginBottom: Spacing.three,
-  },
-  input: {
-    height: 48,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.two,
-    fontSize: 16,
   },
   error: {
     color: '#e5484d',

@@ -7,6 +7,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FindIdRequestDto {
-    private String name;
-    private String phoneNumber;
+    private String email;
+    private String code;
 }
