@@ -4,9 +4,14 @@ import com.seunghyun.householdaccountbook.domain.account.entity.Account;
 import com.seunghyun.householdaccountbook.domain.account.repository.AccountRepository;
 import com.seunghyun.householdaccountbook.domain.accountbook.entity.AccountBook;
 import com.seunghyun.householdaccountbook.domain.accountbook.entity.AccountBookType;
+import com.seunghyun.householdaccountbook.domain.accountbook.entity.PaymentType;
 import com.seunghyun.householdaccountbook.domain.accountbook.repository.AccountBookRepository;
+import com.seunghyun.householdaccountbook.domain.card.entity.Card;
+import com.seunghyun.householdaccountbook.domain.card.repository.CardRepository;
 import com.seunghyun.householdaccountbook.domain.category.entity.Category;
 import com.seunghyun.householdaccountbook.domain.category.repository.CategoryRepository;
+import com.seunghyun.householdaccountbook.domain.member.entity.Member;
+import com.seunghyun.householdaccountbook.domain.member.entity.WithDrawalStatus;
 import com.seunghyun.householdaccountbook.domain.member.repository.MemberRepository;
 import com.seunghyun.householdaccountbook.domain.accountbook.dto.response.CategoryTotal;
 import com.seunghyun.householdaccountbook.domain.accountbook.dto.response.DashboardResponseDto;
@@ -36,6 +41,7 @@ class AccountBookServiceImplTest {
     @Mock MemberRepository memberRepository;
     @Mock CategoryRepository categoryRepository;
     @Mock AccountRepository accountRepository;
+    @Mock CardRepository cardRepository;
     @InjectMocks AccountBookServiceImpl accountBookService;
 
     private AccountBook givenAccountBook(AccountBookType type, long price) {
@@ -107,8 +113,49 @@ class AccountBookServiceImplTest {
     void 금액이_0이하면_가계부를_추가하지_않는다() {
         AccountBook accountBook = AccountBook.builder().content("점심").price(-1000L).type(AccountBookType.EXPENSE).build();
 
-        assertThrows(IllegalArgumentException.class, () -> accountBookService.addAccountBook("user", 2L, 10L, accountBook));
+        assertThrows(IllegalArgumentException.class, () -> accountBookService.addAccountBook("user", 2L, 10L, null, accountBook));
         verify(accountBookRepository, never()).save(any());
+    }
+
+    @Test
+    void 카드_결제는_통장_잔액을_건드리지_않는다() {
+        when(memberRepository.findById("user"))
+                .thenReturn(Optional.of(Member.builder().id("user").withDrawalStatus(WithDrawalStatus.ACTIVE).build()));
+        when(categoryRepository.findByCategoryIdAndMember_Id(2L, "user"))
+                .thenReturn(Optional.of(Category.builder().categoryId(2L).build()));
+        Card card = Card.builder().cardId(5L).build();
+        when(cardRepository.findByCardIdAndMember_Id(5L, "user")).thenReturn(Optional.of(card));
+        AccountBook accountBook = AccountBook.builder().content("점심").price(1000L)
+                .type(AccountBookType.EXPENSE).paymentType(PaymentType.CARD).build();
+
+        accountBookService.addAccountBook("user", 2L, null, 5L, accountBook);
+
+        assertEquals(card, accountBook.getCard());
+        verify(accountBookRepository).save(accountBook);
+        verifyNoInteractions(accountRepository);
+    }
+
+    @Test
+    void 결제수단이_없으면_가계부를_추가하지_않는다() {
+        AccountBook accountBook = AccountBook.builder().content("점심").price(1000L).type(AccountBookType.EXPENSE).build();
+
+        assertThrows(IllegalArgumentException.class, () -> accountBookService.addAccountBook("user", 2L, 10L, null, accountBook));
+        verify(accountBookRepository, never()).save(any());
+    }
+
+    @Test
+    void 카드_내역을_지우거나_고쳐도_잔액을_건드리지_않는다() {
+        AccountBook accountBook = AccountBook.builder().accountBookId(1L).type(AccountBookType.EXPENSE).price(1000L)
+                .paymentType(PaymentType.CARD).card(Card.builder().cardId(5L).build()).build();
+        when(accountBookRepository.findByAccountBookIdAndMember_Id(1L, "user")).thenReturn(Optional.of(accountBook));
+        when(categoryRepository.findByCategoryIdAndMember_Id(2L, "user"))
+                .thenReturn(Optional.of(Category.builder().categoryId(2L).build()));
+
+        accountBookService.updateAccountBook("user", 1L, 2L, "점심", 1500L, AccountBookType.EXPENSE);
+        accountBookService.deleteAccountBook("user", 1L);
+
+        verifyNoInteractions(accountRepository);
+        verify(accountBookRepository).delete(accountBook);
     }
 
     @Test

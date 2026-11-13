@@ -27,11 +27,12 @@ public class AccountBookController {
     @PostMapping("/accountbook/add")
     public ResponseEntity<?> addAccountBook(@AuthenticationPrincipal String id,
                                             @RequestBody AddAccountBookRequestDto addDto) {
-        accountBookService.addAccountBook(id, addDto.getCategoryId(), addDto.getAccountId(), AccountBook.builder()
+        accountBookService.addAccountBook(id, addDto.getCategoryId(), addDto.getAccountId(), addDto.getCardId(), AccountBook.builder()
                 .content(addDto.getContent())
                 .price(addDto.getPrice())
                 .date(addDto.getDate() != null ? addDto.getDate() : LocalDate.now())
                 .type(addDto.getType())
+                .paymentType(addDto.getPaymentType())
                 .build());
         return ResponseEntity.ok("가계부 추가 완료");
     }
@@ -117,7 +118,9 @@ public class AccountBookController {
                 .type(accountBook.getType())
                 .categoryId(accountBook.getCategory().getCategoryId())
                 .categoryName(accountBook.getCategory().getCategoryName())
-                .accountId(accountBook.getAccount().getAccountId())
+                .paymentType(accountBook.getPaymentType())
+                .accountId(accountBook.getAccount() != null ? accountBook.getAccount().getAccountId() : null)
+                .cardId(accountBook.getCard() != null ? accountBook.getCard().getCardId() : null)
                 .build();
     }
 }

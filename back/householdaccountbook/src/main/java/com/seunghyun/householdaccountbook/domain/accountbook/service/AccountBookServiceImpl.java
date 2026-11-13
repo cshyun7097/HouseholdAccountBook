@@ -6,7 +6,9 @@ import com.seunghyun.householdaccountbook.domain.accountbook.dto.response.Dashbo
 import com.seunghyun.householdaccountbook.domain.accountbook.dto.response.MonthlyTotal;
 import com.seunghyun.householdaccountbook.domain.accountbook.entity.AccountBook;
 import com.seunghyun.householdaccountbook.domain.accountbook.entity.AccountBookType;
+import com.seunghyun.householdaccountbook.domain.accountbook.entity.PaymentType;
 import com.seunghyun.householdaccountbook.domain.accountbook.repository.AccountBookRepository;
+import com.seunghyun.householdaccountbook.domain.card.repository.CardRepository;
 import com.seunghyun.householdaccountbook.domain.category.entity.Category;
 import com.seunghyun.householdaccountbook.domain.category.repository.CategoryRepository;
 import com.seunghyun.householdaccountbook.domain.member.entity.Member;
@@ -41,11 +43,15 @@ public class AccountBookServiceImpl implements AccountBookService {
     private final MemberRepository memberRepository;
     private final CategoryRepository categoryRepository;
     private final AccountRepository accountRepository;
+    private final CardRepository cardRepository;
 
     @Override
     @Transactional
-    public void addAccountBook(String id, Long categoryId, Long accountId, AccountBook accountBook) {
+    public void addAccountBook(String id, Long categoryId, Long accountId, Long cardId, AccountBook accountBook) {
         validate(accountBook.getContent(), accountBook.getPrice(), accountBook.getType());
+        if (accountBook.getPaymentType() == null) {
+            throw new IllegalArgumentException("통장/카드 중 결제수단을 선택해주세요.");
+        }
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아이디입니다."));
 
@@ -57,12 +63,22 @@ public class AccountBookServiceImpl implements AccountBookService {
         Category category = categoryRepository.findByCategoryIdAndMember_Id(categoryId, id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다."));
 
+        accountBook.setMember(member);
+        accountBook.setCategory(category);
+
+        // 카드는 잔액이 없으므로 내역만 남긴다
+        if (accountBook.getPaymentType() == PaymentType.CARD) {
+            // 본인 카드만 조회해서 남의 카드로 등록하는 것을 막는다
+            accountBook.setCard(cardRepository.findByCardIdAndMember_Id(cardId, id)
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카드입니다.")));
+            accountBookRepository.save(accountBook);
+            return;
+        }
+
         // 본인 계좌만 조회해서 남의 계좌로 등록하는 것을 막는다
         Account account = accountRepository.findByAccountIdAndMember_Id(accountId, id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 계좌입니다."));
 
-        accountBook.setMember(member);
-        accountBook.setCategory(category);
         accountBook.setAccount(account);
         accountBookRepository.save(accountBook);
         changeBalance(accountId, balanceEffect(accountBook.getType(), accountBook.getPrice()));
@@ -125,7 +141,7 @@ public class AccountBookServiceImpl implements AccountBookService {
 
         // 기존 내역이 잔액에 준 영향과 수정 후 영향의 차이만큼만 반영한다
         long diff = balanceEffect(type, price) - balanceEffect(accountBook.getType(), accountBook.getPrice());
-        if (diff != 0) {
+        if (diff != 0 && accountBook.getAccount() != null) {
             accountRepository.addBalance(accountBook.getAccount().getAccountId(), diff);
         }
 
@@ -143,7 +159,9 @@ public class AccountBookServiceImpl implements AccountBookService {
 
         // 추가할 때 반영한 만큼 되돌린다
         // 이미 쓴 수입을 지우면 잔액이 음수가 될 수 있지만, 잘못 쓴 내역은 지울 수 있어야 한다
-        accountRepository.addBalance(accountBook.getAccount().getAccountId(), -balanceEffect(accountBook.getType(), accountBook.getPrice()));
+        if (accountBook.getAccount() != null) {
+            accountRepository.addBalance(accountBook.getAccount().getAccountId(), -balanceEffect(accountBook.getType(), accountBook.getPrice()));
+        }
         accountBookRepository.delete(accountBook);
     }
 

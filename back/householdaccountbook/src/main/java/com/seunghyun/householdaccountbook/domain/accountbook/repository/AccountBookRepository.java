@@ -48,6 +48,8 @@ public interface AccountBookRepository extends JpaRepository<AccountBook, Long> 
 
     boolean existsByAccount_AccountId(Long accountId);
 
+    boolean existsByCard_CardId(Long cardId);
+
     boolean existsByCategory_CategoryId(Long categoryId);
 
     @Query("select new com.seunghyun.householdaccountbook.domain.accountbook.dto.response.MonthlyTotal(" +

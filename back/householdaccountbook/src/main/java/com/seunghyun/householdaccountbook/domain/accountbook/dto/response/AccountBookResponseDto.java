@@ -1,6 +1,7 @@
 package com.seunghyun.householdaccountbook.domain.accountbook.dto.response;
 
 import com.seunghyun.householdaccountbook.domain.accountbook.entity.AccountBookType;
+import com.seunghyun.householdaccountbook.domain.accountbook.entity.PaymentType;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -16,5 +17,7 @@ public class AccountBookResponseDto {
     private AccountBookType type;
     private Long categoryId;
     private String categoryName;
-    private Long accountId;
+    private PaymentType paymentType;
+    private Long accountId; // 카드 결제면 null
+    private Long cardId; // 통장 결제면 null
 }

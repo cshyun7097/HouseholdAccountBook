@@ -1,6 +1,7 @@
 package com.seunghyun.householdaccountbook.domain.accountbook.dto.request;
 
 import com.seunghyun.householdaccountbook.domain.accountbook.entity.AccountBookType;
+import com.seunghyun.householdaccountbook.domain.accountbook.entity.PaymentType;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -14,6 +15,8 @@ public class AddAccountBookRequestDto {
     private Long price;
     private AccountBookType type;
     private Long categoryId;
-    private Long accountId;
+    private PaymentType paymentType;
+    private Long accountId; // paymentType이 ACCOUNT일 때
+    private Long cardId; // paymentType이 CARD일 때
     private LocalDate date; // 없으면 오늘
 }

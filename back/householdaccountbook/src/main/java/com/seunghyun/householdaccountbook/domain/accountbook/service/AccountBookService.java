@@ -11,7 +11,8 @@ import java.util.List;
 
 public interface AccountBookService {
 
-    void addAccountBook(String id, Long categoryId, Long accountId, AccountBook accountBook);
+    // paymentType이 ACCOUNT면 accountId, CARD면 cardId를 쓴다
+    void addAccountBook(String id, Long categoryId, Long accountId, Long cardId, AccountBook accountBook);
 
     Page<AccountBook> getAccountBooks(String id, int page);
 
