@@ -22,7 +22,9 @@ export default function AddCardScreen() {
     setLoading(true);
     try {
       await createCard({ cardName: cardName.trim(), cardCompany: cardCompany.trim() });
-      router.dismissTo('/account-settings');
+      // back, so a half-written entry on the write screen survives; after a web reload there is no history, so fall back
+      if (router.canGoBack()) router.back();
+      else router.dismissTo('/account-settings');
     } catch (e) {
       setError((await authedErrorMessage(e)) ?? '');
     } finally {

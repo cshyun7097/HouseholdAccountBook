@@ -27,7 +27,9 @@ export default function AddAccountScreen() {
     setLoading(true);
     try {
       await createAccount({ accountName, bankInfo, accountNumber, balance: amount });
-      router.dismissTo('/account-settings');
+      // back, so a half-written entry on the write screen survives; after a web reload there is no history, so fall back
+      if (router.canGoBack()) router.back();
+      else router.dismissTo('/account-settings');
     } catch (e) {
       setError((await authedErrorMessage(e)) ?? '');
     } finally {

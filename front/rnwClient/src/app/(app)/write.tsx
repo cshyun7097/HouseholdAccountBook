@@ -6,7 +6,7 @@ import { type Account, getAccounts } from '@/api/account';
 import { type AccountBook, addAccountBook, deleteAccountBook, updateAccountBook } from '@/api/accountbook';
 import { authedErrorMessage } from '@/api/auth-error';
 import { type Card, getCards } from '@/api/card';
-import { type Category, getCategories } from '@/api/category';
+import { addCategory, type Category, getCategories } from '@/api/category';
 import { Chip } from '@/components/chip';
 import { DateField } from '@/components/date-field';
 import { ThemedText } from '@/components/themed-text';
@@ -35,6 +35,7 @@ export default function WriteScreen() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryId, setCategoryId] = useState(params.categoryId ? Number(params.categoryId) : undefined);
   const [categoryOpen, setCategoryOpen] = useState(false);
+  const [newCategory, setNewCategory] = useState<string>(); // undefined = the inline add field is closed
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false); // Alert buttons do nothing on web, so confirm with a second tap
@@ -43,7 +44,7 @@ export default function WriteScreen() {
     setError((await authedErrorMessage(e)) ?? '');
   }
 
-  // Reload on focus, so accounts/cards/categories added via the links below show up on return.
+  // Reload on focus, so accounts/cards added via the links below show up on return (the add screens go back here).
   useFocusEffect(
     useCallback(() => {
       getAccounts()
@@ -75,6 +76,23 @@ export default function WriteScreen() {
       await showError(e);
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Add a category right here, so the entry being written isn't lost by leaving the screen
+  async function onAddCategory() {
+    const name = newCategory?.trim();
+    if (!name) return setError('카테고리 이름을 입력해주세요.');
+    setError('');
+    try {
+      await addCategory(name);
+      // the add API returns no id, so reload and pick the new one by name
+      const res = await getCategories();
+      setCategories(res);
+      setCategoryId(res.find((c) => c.categoryName === name)?.categoryId);
+      setNewCategory(undefined);
+    } catch (e) {
+      await showError(e);
     }
   }
 
@@ -175,10 +193,31 @@ export default function WriteScreen() {
         )}
 
         <ThemedText type="smallBold">카테고리</ThemedText>
-        {categories.length === 0 ? (
-          <Pressable accessibilityRole="link" onPress={() => router.push('/categories')}>
-            <ThemedText type="linkPrimary">등록된 카테고리가 없습니다. 카테고리 추가하러 가기</ThemedText>
-          </Pressable>
+        {categories.length === 0 && (
+          <ThemedText type="small" themeColor="textSecondary">등록된 카테고리가 없습니다. 바로 추가해주세요.</ThemedText>
+        )}
+        {categories.length === 0 || newCategory !== undefined ? (
+          <ThemedView style={styles.inline}>
+            <TextInput
+              style={[inputStyle, styles.inlineInput]}
+              placeholder="새 카테고리 (예: 식비)"
+              placeholderTextColor={theme.textSecondary}
+              value={newCategory ?? ''}
+              onChangeText={setNewCategory}
+              onSubmitEditing={onAddCategory}
+            />
+            <Pressable
+              accessibilityRole="button"
+              onPress={onAddCategory}
+              style={({ pressed }) => [styles.addButton, { backgroundColor: theme.text }, pressed && styles.pressed]}>
+              <ThemedText style={{ color: theme.background }}>추가</ThemedText>
+            </Pressable>
+            {categories.length > 0 && (
+              <Pressable accessibilityRole="button" onPress={() => setNewCategory(undefined)} style={[styles.addButton, { backgroundColor: theme.backgroundElement }]}>
+                <ThemedText>취소</ThemedText>
+              </Pressable>
+            )}
+          </ThemedView>
         ) : (
           <ThemedView>
             <Pressable
@@ -206,6 +245,15 @@ export default function WriteScreen() {
                     <ThemedText>{c.categoryName}</ThemedText>
                   </Pressable>
                 ))}
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setNewCategory('');
+                    setCategoryOpen(false);
+                  }}
+                  style={({ pressed }) => [styles.option, pressed && { backgroundColor: theme.backgroundSelected }]}>
+                  <ThemedText themeColor="textSecondary">+ 새 카테고리 추가</ThemedText>
+                </Pressable>
               </ThemedView>
             )}
           </ThemedView>
@@ -261,6 +309,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.two,
     fontSize: 16,
+  },
+  inline: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  inlineInput: {
+    flex: 1,
+  },
+  addButton: {
+    height: 48,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Spacing.two,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dateField: {
     height: 48, // match the other inputs on this screen
