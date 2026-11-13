@@ -11,6 +11,7 @@ export const getCards = () => get<Card[]>('/card/search');
 
 export const createCard = (data: Pick<Card, 'cardName' | 'cardCompany'>) => post<string>('/card/add', data);
 
-// sets the card's debt to 0
-export const payCard = (cardId: number) => patch<string>(`/card/pay/${cardId}`);
+// takes amount out of the account and off the card's debt
+export const payCard = (cardId: number, accountId: number, amount: number) =>
+  patch<string>(`/card/pay/${cardId}`, { accountId, amount });
 export const deleteCard = (cardId: number) => del<string>(`/card/delete/${cardId}`);
