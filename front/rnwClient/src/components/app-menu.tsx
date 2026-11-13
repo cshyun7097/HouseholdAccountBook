@@ -10,7 +10,7 @@ import { useTheme } from '@/hooks/use-theme';
 const MENU: { label: string; href: Href & string }[] = [
   { label: '홈', href: '/home' },
   { label: '대시보드', href: '/dashboard' },
-  { label: '통장설정', href: '/account-settings' },
+  { label: '통장 및 카드 관리', href: '/account-settings' },
   { label: '카테고리', href: '/categories' },
   { label: '마이페이지', href: '/mypage' },
 ];

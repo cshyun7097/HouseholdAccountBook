@@ -181,7 +181,7 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityHint="수정 또는 삭제"
               // there is no single-entry API, so the entry travels to the edit screen as params
-              onPress={() => router.push({ pathname: '/write', params: { ...item } })}
+              onPress={() => router.push({ pathname: '/write', params: Object.fromEntries(Object.entries(item).filter(([, v]) => v != null)) })}
               style={({ pressed }) => pressed && styles.pressed}>
               <ThemedView type="backgroundElement" style={styles.row}>
                 <ThemedView type="backgroundElement" style={styles.rowText}>

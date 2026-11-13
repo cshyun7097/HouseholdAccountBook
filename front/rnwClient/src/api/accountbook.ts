@@ -8,7 +8,9 @@ export type AccountBook = {
   type: 'INCOME' | 'EXPENSE';
   categoryId: number;
   categoryName: string;
-  accountId: number;
+  paymentType: 'ACCOUNT' | 'CARD';
+  accountId: number | null; // null for card entries
+  cardId: number | null; // null for account entries
 };
 
 // Spring PagedModel body
@@ -30,10 +32,11 @@ export const getAccountBooks = (page: number, accountId?: number, range?: DateRa
   return get<Page<AccountBook>>(`/accountbook/get${accountId ? `/${accountId}` : ''}${range ? '/date' : ''}?page=${page}${dates}`);
 };
 
-export type AddAccountBookRequest = Pick<AccountBook, 'content' | 'price' | 'type' | 'categoryId' | 'accountId' | 'date'>;
+export type AddAccountBookRequest = Pick<AccountBook, 'content' | 'price' | 'type' | 'categoryId' | 'paymentType' | 'date'> &
+  Partial<Pick<AccountBook, 'accountId' | 'cardId'>>;
 export const addAccountBook = (data: AddAccountBookRequest) => post<string>('/accountbook/add', data);
 
-// The backend can't change an entry's date or account
+// The backend can't change an entry's date, account or card
 export type UpdateAccountBookRequest = Pick<AccountBook, 'content' | 'price' | 'type' | 'categoryId'>;
 export const updateAccountBook = (accountBookId: number, data: UpdateAccountBookRequest) =>
   patch<string>(`/accountbook/update/${accountBookId}`, data);
