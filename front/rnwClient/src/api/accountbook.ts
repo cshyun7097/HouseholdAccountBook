@@ -8,7 +8,9 @@ export type AccountBook = {
   type: 'INCOME' | 'EXPENSE';
   categoryId: number;
   categoryName: string;
-  accountId: number;
+  paymentType: 'ACCOUNT' | 'CARD';
+  accountId: number | null; // null for card entries
+  cardId: number | null; // null for account entries
 };
 
 // Spring PagedModel body
@@ -19,21 +21,25 @@ export type Page<T> = {
 
 export type DateRange = { startDate: string; endDate: string }; // yyyy-MM-dd, both days included
 
-// accountId omitted = every account; range omitted = all dates; categoryIds empty = every category
-export const getAccountBooks = (page: number, accountId?: number, range?: DateRange, categoryIds: number[] = []) => {
+// Set at most one of accountId / cardId; neither = every account and card
+export type Source = { accountId?: number; cardId?: number };
+
+// range omitted = all dates; categoryIds empty = every category
+export const getAccountBooks = (page: number, { accountId, cardId }: Source, range?: DateRange, categoryIds: number[] = []) => {
   const dates = range ? `&startDate=${range.startDate}&endDate=${range.endDate}` : '';
   if (categoryIds.length) {
-    return get<Page<AccountBook>>(
-      `/accountbook/get/category?page=${page}&categoryIds=${categoryIds.join(',')}${accountId ? `&accountId=${accountId}` : ''}${dates}`,
-    );
+    const source = cardId ? `&cardId=${cardId}` : accountId ? `&accountId=${accountId}` : '';
+    return get<Page<AccountBook>>(`/accountbook/get/category?page=${page}&categoryIds=${categoryIds.join(',')}${source}${dates}`);
   }
-  return get<Page<AccountBook>>(`/accountbook/get${accountId ? `/${accountId}` : ''}${range ? '/date' : ''}?page=${page}${dates}`);
+  const source = cardId ? `/card/${cardId}` : accountId ? `/${accountId}` : '';
+  return get<Page<AccountBook>>(`/accountbook/get${source}${range ? '/date' : ''}?page=${page}${dates}`);
 };
 
-export type AddAccountBookRequest = Pick<AccountBook, 'content' | 'price' | 'type' | 'categoryId' | 'accountId' | 'date'>;
+export type AddAccountBookRequest = Pick<AccountBook, 'content' | 'price' | 'type' | 'categoryId' | 'paymentType' | 'date'> &
+  Partial<Pick<AccountBook, 'accountId' | 'cardId'>>;
 export const addAccountBook = (data: AddAccountBookRequest) => post<string>('/accountbook/add', data);
 
-// The backend can't change an entry's date or account
+// The backend can't change an entry's date, account or card
 export type UpdateAccountBookRequest = Pick<AccountBook, 'content' | 'price' | 'type' | 'categoryId'>;
 export const updateAccountBook = (accountBookId: number, data: UpdateAccountBookRequest) =>
   patch<string>(`/accountbook/update/${accountBookId}`, data);

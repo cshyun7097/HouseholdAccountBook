@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { type Account, getAccounts } from '@/api/account';
 import { type AccountBook, type DateRange, getAccountBooks } from '@/api/accountbook';
 import { authedErrorMessage } from '@/api/auth-error';
+import { type Card, getCards } from '@/api/card';
 import { type Category, getCategories } from '@/api/category';
 import { logout } from '@/api/member';
 import { AppHeader } from '@/components/app-menu';
@@ -22,6 +23,8 @@ export default function HomeScreen() {
   const theme = useTheme();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountId, setAccountId] = useState<number>(); // undefined = 전체
+  const [cards, setCards] = useState<Card[]>([]);
+  const [cardId, setCardId] = useState<number>(); // only one of accountId / cardId is set at a time
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryIds, setCategoryIds] = useState<number[]>([]); // empty = 전체
   const [startDate, setStartDate] = useState<string>();
@@ -37,10 +40,11 @@ export default function HomeScreen() {
     setError((await authedErrorMessage(e)) ?? '');
   }
 
-  // Reload on focus too, so entries and accounts added on other screens show up on return.
+  // Reload on focus too, so entries, accounts and cards added on other screens show up on return.
   useFocusEffect(
     useCallback(() => {
       getAccounts().then(setAccounts).catch(handleError);
+      getCards().then(setCards).catch(handleError);
       getCategories().then(setCategories).catch(handleError);
     }, []),
   );
@@ -48,7 +52,7 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       let ignore = false; // drop responses for a filter the user already switched away from
-      getAccountBooks(0, accountId, range, categoryIds)
+      getAccountBooks(0, { accountId, cardId }, range, categoryIds)
         .then((res) => {
           if (ignore) return;
           setItems(res.content);
@@ -64,14 +68,23 @@ export default function HomeScreen() {
       return () => {
         ignore = true;
       };
-    }, [accountId, range, categoryIds]),
+    }, [accountId, cardId, range, categoryIds]),
   );
 
   function selectAccount(id: number | undefined) {
-    if (id === accountId) return;
+    if (id === accountId && !cardId) return;
     setLoading(true);
     setError('');
     setAccountId(id);
+    setCardId(undefined);
+  }
+
+  function selectCard(id: number) {
+    if (id === cardId) return;
+    setLoading(true);
+    setError('');
+    setCardId(id);
+    setAccountId(undefined);
   }
 
   function selectCategories(ids: number[]) {
@@ -104,7 +117,7 @@ export default function HomeScreen() {
     if (loading || !hasMore) return;
     setLoading(true);
     try {
-      const res = await getAccountBooks(page + 1, accountId, range, categoryIds);
+      const res = await getAccountBooks(page + 1, { accountId, cardId }, range, categoryIds);
       setItems((prev) => [...prev, ...res.content]);
       setPage(res.page.number);
       setHasMore(res.page.number + 1 < res.page.totalPages);
@@ -132,9 +145,17 @@ export default function HomeScreen() {
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipBar} contentContainerStyle={styles.chips}>
           {chips.map((c) => (
-            <Chip key={c.id ?? 'all'} label={c.name} selected={c.id === accountId} onPress={() => selectAccount(c.id)} />
+            <Chip key={c.id ?? 'all'} label={c.name} selected={!cardId && c.id === accountId} onPress={() => selectAccount(c.id)} />
           ))}
         </ScrollView>
+        {cards.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipBar} contentContainerStyle={[styles.chips, styles.cardChips]}>
+            <ThemedText type="small" themeColor="textSecondary">카드</ThemedText>
+            {cards.map((c) => (
+              <Chip key={c.cardId} label={c.cardName} selected={c.cardId === cardId} onPress={() => selectCard(c.cardId)} />
+            ))}
+          </ScrollView>
+        )}
 
         <CategoryPicker categories={categories} value={categoryIds} onChange={selectCategories} style={styles.categoryPicker} />
 
@@ -181,7 +202,7 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityHint="수정 또는 삭제"
               // there is no single-entry API, so the entry travels to the edit screen as params
-              onPress={() => router.push({ pathname: '/write', params: { ...item } })}
+              onPress={() => router.push({ pathname: '/write', params: Object.fromEntries(Object.entries(item).filter(([, v]) => v != null)) })}
               style={({ pressed }) => pressed && styles.pressed}>
               <ThemedView type="backgroundElement" style={styles.row}>
                 <ThemedView type="backgroundElement" style={styles.rowText}>
@@ -258,6 +279,10 @@ const styles = StyleSheet.create({
   chips: {
     gap: Spacing.two,
     paddingVertical: Spacing.two,
+  },
+  cardChips: {
+    alignItems: 'center',
+    paddingTop: 0,
   },
   error: {
     color: '#e5484d',

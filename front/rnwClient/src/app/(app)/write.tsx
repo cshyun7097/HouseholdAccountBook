@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { type Account, getAccounts } from '@/api/account';
 import { type AccountBook, addAccountBook, deleteAccountBook, updateAccountBook } from '@/api/accountbook';
 import { authedErrorMessage } from '@/api/auth-error';
+import { type Card, getCards } from '@/api/card';
 import { type Category, getCategories } from '@/api/category';
 import { Chip } from '@/components/chip';
 import { DateField } from '@/components/date-field';
@@ -28,6 +29,9 @@ export default function WriteScreen() {
   const [date, setDate] = useState(params.date ?? today());
   const [accounts, setAccounts] = useState<Account[]>();
   const [accountId, setAccountId] = useState(params.accountId ? Number(params.accountId) : undefined);
+  const [paymentType, setPaymentType] = useState<AccountBook['paymentType']>(params.paymentType === 'CARD' ? 'CARD' : 'ACCOUNT');
+  const [cards, setCards] = useState<Card[]>();
+  const [cardId, setCardId] = useState(params.cardId ? Number(params.cardId) : undefined);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryId, setCategoryId] = useState(params.categoryId ? Number(params.categoryId) : undefined);
   const [categoryOpen, setCategoryOpen] = useState(false);
@@ -39,13 +43,19 @@ export default function WriteScreen() {
     setError((await authedErrorMessage(e)) ?? '');
   }
 
-  // Reload on focus, so accounts/categories added via the links below show up on return.
+  // Reload on focus, so accounts/cards/categories added via the links below show up on return.
   useFocusEffect(
     useCallback(() => {
       getAccounts()
         .then((res) => {
           setAccounts(res);
           setAccountId((prev) => prev ?? res[0]?.accountId);
+        })
+        .catch(showError);
+      getCards()
+        .then((res) => {
+          setCards(res);
+          setCardId((prev) => prev ?? res[0]?.cardId);
         })
         .catch(showError);
       getCategories().then(setCategories).catch(showError);
@@ -72,10 +82,11 @@ export default function WriteScreen() {
     const amount = Number(price);
     if (!content.trim() || !price) return setError('내용과 금액을 입력해주세요.');
     if (!Number.isSafeInteger(amount) || amount <= 0) return setError('금액은 0보다 큰 숫자로 입력해주세요.');
-    if (!accountId) return setError('통장을 선택해주세요.');
+    if (paymentType === 'ACCOUNT' && !accountId) return setError('통장을 선택해주세요.');
+    if (paymentType === 'CARD' && !cardId) return setError('카드를 선택해주세요.');
     if (!categoryId) return setError('카테고리를 선택해주세요.');
     const data = { content: content.trim(), price: amount, type, categoryId };
-    await run(() => (editId ? updateAccountBook(editId, data) : addAccountBook({ ...data, accountId, date })));
+    await run(() => (editId ? updateAccountBook(editId, data) : addAccountBook({ ...data, paymentType, date, ...(paymentType === 'CARD' ? { cardId } : { accountId }) })));
   }
 
   function onDelete() {
@@ -85,6 +96,7 @@ export default function WriteScreen() {
   }
 
   const selectedAccount = accounts?.find((a) => a.accountId === accountId);
+  const selectedCard = cards?.find((c) => c.cardId === cardId);
   const inputStyle = [styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }];
 
   return (
@@ -119,24 +131,47 @@ export default function WriteScreen() {
           <DateField label="날짜" value={date} onChange={setDate} style={styles.dateField} />
         )}
 
-        <ThemedText type="smallBold">통장</ThemedText>
+        <ThemedText type="smallBold">결제수단</ThemedText>
         {editId ? (
           <ThemedText themeColor="textSecondary">
-            {selectedAccount?.accountName ?? '-'}
+            {paymentType === 'CARD' ? `카드 · ${selectedCard?.cardName ?? '-'}` : `통장 · ${selectedAccount?.accountName ?? '-'}`}
           </ThemedText>
-        ) : accounts?.length === 0 ? (
-          <Pressable accessibilityRole="link" onPress={() => router.push('/account-settings/add')}>
-            <ThemedText type="linkPrimary">등록된 통장이 없습니다. 통장 추가하러 가기</ThemedText>
-          </Pressable>
         ) : (
-          <ThemedView style={styles.chips}>
-            {accounts?.map((a) => (
-              <Chip key={a.accountId} label={a.accountName} selected={a.accountId === accountId} onPress={() => setAccountId(a.accountId)} />
-            ))}
-          </ThemedView>
+          <>
+            <ThemedView style={styles.chips}>
+              <Chip label="통장" selected={paymentType === 'ACCOUNT'} onPress={() => setPaymentType('ACCOUNT')} />
+              <Chip label="카드" selected={paymentType === 'CARD'} onPress={() => setPaymentType('CARD')} />
+            </ThemedView>
+            {paymentType === 'ACCOUNT' ? (
+              accounts?.length === 0 ? (
+                <Pressable accessibilityRole="link" onPress={() => router.push('/account-settings/add')}>
+                  <ThemedText type="linkPrimary">등록된 통장이 없습니다. 통장 추가하러 가기</ThemedText>
+                </Pressable>
+              ) : (
+                <ThemedView style={styles.chips}>
+                  {accounts?.map((a) => (
+                    <Chip key={a.accountId} label={a.accountName} selected={a.accountId === accountId} onPress={() => setAccountId(a.accountId)} />
+                  ))}
+                </ThemedView>
+              )
+            ) : cards?.length === 0 ? (
+              <Pressable accessibilityRole="link" onPress={() => router.push('/account-settings/card/add')}>
+                <ThemedText type="linkPrimary">등록된 카드가 없습니다. 카드 추가하러 가기</ThemedText>
+              </Pressable>
+            ) : (
+              <ThemedView style={styles.chips}>
+                {cards?.map((c) => (
+                  <Chip key={c.cardId} label={c.cardName} selected={c.cardId === cardId} onPress={() => setCardId(c.cardId)} />
+                ))}
+              </ThemedView>
+            )}
+          </>
         )}
-        {selectedAccount && (
+        {paymentType === 'ACCOUNT' && selectedAccount && (
           <ThemedText type="small" themeColor="textSecondary">잔액: {selectedAccount.balance.toLocaleString('ko-KR')}원</ThemedText>
+        )}
+        {paymentType === 'CARD' && selectedCard && (
+          <ThemedText type="small" themeColor="textSecondary">부채: {selectedCard.debt.toLocaleString('ko-KR')}원</ThemedText>
         )}
 
         <ThemedText type="smallBold">카테고리</ThemedText>
@@ -187,7 +222,7 @@ export default function WriteScreen() {
         </Pressable>
         {!!editId && (
           <>
-            <ThemedText type="small" themeColor="textSecondary">날짜와 통장은 수정할 수 없습니다. 바꾸려면 삭제 후 다시 작성해주세요.</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">날짜와 결제수단은 수정할 수 없습니다. 바꾸려면 삭제 후 다시 작성해주세요.</ThemedText>
             <Pressable
               accessibilityRole="button"
               disabled={loading}
