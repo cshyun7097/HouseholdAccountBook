@@ -21,15 +21,18 @@ export type Page<T> = {
 
 export type DateRange = { startDate: string; endDate: string }; // yyyy-MM-dd, both days included
 
-// accountId omitted = every account; range omitted = all dates; categoryIds empty = every category
-export const getAccountBooks = (page: number, accountId?: number, range?: DateRange, categoryIds: number[] = []) => {
+// Set at most one of accountId / cardId; neither = every account and card
+export type Source = { accountId?: number; cardId?: number };
+
+// range omitted = all dates; categoryIds empty = every category
+export const getAccountBooks = (page: number, { accountId, cardId }: Source, range?: DateRange, categoryIds: number[] = []) => {
   const dates = range ? `&startDate=${range.startDate}&endDate=${range.endDate}` : '';
   if (categoryIds.length) {
-    return get<Page<AccountBook>>(
-      `/accountbook/get/category?page=${page}&categoryIds=${categoryIds.join(',')}${accountId ? `&accountId=${accountId}` : ''}${dates}`,
-    );
+    const source = cardId ? `&cardId=${cardId}` : accountId ? `&accountId=${accountId}` : '';
+    return get<Page<AccountBook>>(`/accountbook/get/category?page=${page}&categoryIds=${categoryIds.join(',')}${source}${dates}`);
   }
-  return get<Page<AccountBook>>(`/accountbook/get${accountId ? `/${accountId}` : ''}${range ? '/date' : ''}?page=${page}${dates}`);
+  const source = cardId ? `/card/${cardId}` : accountId ? `/${accountId}` : '';
+  return get<Page<AccountBook>>(`/accountbook/get${source}${range ? '/date' : ''}?page=${page}${dates}`);
 };
 
 export type AddAccountBookRequest = Pick<AccountBook, 'content' | 'price' | 'type' | 'categoryId' | 'paymentType' | 'date'> &
