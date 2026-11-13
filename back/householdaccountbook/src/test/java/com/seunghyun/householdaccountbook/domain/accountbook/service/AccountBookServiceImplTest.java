@@ -4,9 +4,14 @@ import com.seunghyun.householdaccountbook.domain.account.entity.Account;
 import com.seunghyun.householdaccountbook.domain.account.repository.AccountRepository;
 import com.seunghyun.householdaccountbook.domain.accountbook.entity.AccountBook;
 import com.seunghyun.householdaccountbook.domain.accountbook.entity.AccountBookType;
+import com.seunghyun.householdaccountbook.domain.accountbook.entity.PaymentType;
 import com.seunghyun.householdaccountbook.domain.accountbook.repository.AccountBookRepository;
+import com.seunghyun.householdaccountbook.domain.card.entity.Card;
+import com.seunghyun.householdaccountbook.domain.card.repository.CardRepository;
 import com.seunghyun.householdaccountbook.domain.category.entity.Category;
 import com.seunghyun.householdaccountbook.domain.category.repository.CategoryRepository;
+import com.seunghyun.householdaccountbook.domain.member.entity.Member;
+import com.seunghyun.householdaccountbook.domain.member.entity.WithDrawalStatus;
 import com.seunghyun.householdaccountbook.domain.member.repository.MemberRepository;
 import com.seunghyun.householdaccountbook.domain.accountbook.dto.response.CategoryTotal;
 import com.seunghyun.householdaccountbook.domain.accountbook.dto.response.DashboardResponseDto;
@@ -36,6 +41,7 @@ class AccountBookServiceImplTest {
     @Mock MemberRepository memberRepository;
     @Mock CategoryRepository categoryRepository;
     @Mock AccountRepository accountRepository;
+    @Mock CardRepository cardRepository;
     @InjectMocks AccountBookServiceImpl accountBookService;
 
     private AccountBook givenAccountBook(AccountBookType type, long price) {
@@ -107,8 +113,52 @@ class AccountBookServiceImplTest {
     void 금액이_0이하면_가계부를_추가하지_않는다() {
         AccountBook accountBook = AccountBook.builder().content("점심").price(-1000L).type(AccountBookType.EXPENSE).build();
 
-        assertThrows(IllegalArgumentException.class, () -> accountBookService.addAccountBook("user", 2L, 10L, accountBook));
+        assertThrows(IllegalArgumentException.class, () -> accountBookService.addAccountBook("user", 2L, 10L, null, accountBook));
         verify(accountBookRepository, never()).save(any());
+    }
+
+    @Test
+    void 카드_지출은_통장_잔액_대신_카드_부채를_늘린다() {
+        when(memberRepository.findById("user"))
+                .thenReturn(Optional.of(Member.builder().id("user").withDrawalStatus(WithDrawalStatus.ACTIVE).build()));
+        when(categoryRepository.findByCategoryIdAndMember_Id(2L, "user"))
+                .thenReturn(Optional.of(Category.builder().categoryId(2L).build()));
+        Card card = Card.builder().cardId(5L).build();
+        when(cardRepository.findByCardIdAndMember_Id(5L, "user")).thenReturn(Optional.of(card));
+        AccountBook accountBook = AccountBook.builder().content("점심").price(1000L)
+                .type(AccountBookType.EXPENSE).paymentType(PaymentType.CARD).build();
+
+        accountBookService.addAccountBook("user", 2L, null, 5L, accountBook);
+
+        assertEquals(card, accountBook.getCard());
+        verify(accountBookRepository).save(accountBook);
+        verify(cardRepository).addDebt(5L, 1000L);
+        verifyNoInteractions(accountRepository);
+    }
+
+    @Test
+    void 결제수단이_없으면_가계부를_추가하지_않는다() {
+        AccountBook accountBook = AccountBook.builder().content("점심").price(1000L).type(AccountBookType.EXPENSE).build();
+
+        assertThrows(IllegalArgumentException.class, () -> accountBookService.addAccountBook("user", 2L, 10L, null, accountBook));
+        verify(accountBookRepository, never()).save(any());
+    }
+
+    @Test
+    void 카드_내역을_고치거나_지우면_통장_대신_부채에_반영한다() {
+        AccountBook accountBook = AccountBook.builder().accountBookId(1L).type(AccountBookType.EXPENSE).price(1000L)
+                .paymentType(PaymentType.CARD).card(Card.builder().cardId(5L).build()).build();
+        when(accountBookRepository.findByAccountBookIdAndMember_Id(1L, "user")).thenReturn(Optional.of(accountBook));
+        when(categoryRepository.findByCategoryIdAndMember_Id(2L, "user"))
+                .thenReturn(Optional.of(Category.builder().categoryId(2L).build()));
+
+        accountBookService.updateAccountBook("user", 1L, 2L, "점심", 1500L, AccountBookType.EXPENSE);
+        accountBookService.deleteAccountBook("user", 1L);
+
+        verify(cardRepository).addDebt(5L, 500L); // 1000 -> 1500
+        verify(cardRepository).addDebt(5L, -1500L); // 삭제하면 수정된 1500만큼 되돌린다
+        verifyNoInteractions(accountRepository);
+        verify(accountBookRepository).delete(accountBook);
     }
 
     @Test
@@ -156,14 +206,14 @@ class AccountBookServiceImplTest {
     @Test
     void 카테고리를_선택하지_않으면_조회하지_않는다() {
         assertThrows(IllegalArgumentException.class,
-                () -> accountBookService.getAccountBooksByCategories("user", List.of(), null, null, null, 0));
+                () -> accountBookService.getAccountBooksByCategories("user", List.of(), null, null, null, null, 0));
     }
 
     @Test
     void 카테고리_조회는_통장과_기간이_있으면_둘_다_조건에_건다() {
         LocalDate start = LocalDate.of(2026, 11, 1), end = LocalDate.of(2026, 11, 30);
 
-        accountBookService.getAccountBooksByCategories("user", List.of(1L, 2L), 3L, start, end, 0);
+        accountBookService.getAccountBooksByCategories("user", List.of(1L, 2L), 3L, null, start, end, 0);
 
         verify(accountBookRepository).findAllByMember_IdAndCategory_CategoryIdInAndAccount_AccountIdAndDateBetween(
                 eq("user"), eq(List.of(1L, 2L)), eq(3L), eq(start), eq(end), any());
@@ -171,14 +221,27 @@ class AccountBookServiceImplTest {
 
     @Test
     void 카테고리_조회는_통장이_없으면_전체_통장에서_찾는다() {
-        accountBookService.getAccountBooksByCategories("user", List.of(1L), null, null, null, 0);
+        accountBookService.getAccountBooksByCategories("user", List.of(1L), null, null, null, null, 0);
 
         verify(accountBookRepository).findAllByMember_IdAndCategory_CategoryIdIn(eq("user"), eq(List.of(1L)), any());
     }
 
     @Test
+    void 카테고리_조회는_카드가_있으면_카드_조건을_건다() {
+        accountBookService.getAccountBooksByCategories("user", List.of(1L), null, 4L, null, null, 0);
+
+        verify(accountBookRepository).findAllByMember_IdAndCategory_CategoryIdInAndCard_CardId(eq("user"), eq(List.of(1L)), eq(4L), any());
+    }
+
+    @Test
+    void 카테고리_조회는_통장과_카드를_같이_고르면_막는다() {
+        assertThrows(IllegalArgumentException.class,
+                () -> accountBookService.getAccountBooksByCategories("user", List.of(1L), 3L, 4L, null, null, 0));
+        verifyNoInteractions(accountBookRepository);
+    }
+
+    @Test
     void 카테고리_조회는_기간이_1개월을_넘으면_막는다() {
-        assertThrows(IllegalArgumentException.class, () -> accountBookService.getAccountBooksByCategories(
-                "user", List.of(1L), null, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 3, 1), 0));
+        assertThrows(IllegalArgumentException.class, () -> accountBookService.getAccountBooksByCategories("user", List.of(1L), null, null, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 3, 1), 0));
     }
 }
