@@ -1,6 +1,7 @@
 package com.seunghyun.householdaccountbook.domain.card.controller;
 
 import com.seunghyun.householdaccountbook.domain.card.dto.request.CreateCardRequestDto;
+import com.seunghyun.householdaccountbook.domain.card.dto.request.PayCardRequestDto;
 import com.seunghyun.householdaccountbook.domain.card.dto.response.CardResponseDto;
 import com.seunghyun.householdaccountbook.domain.card.entity.Card;
 import com.seunghyun.householdaccountbook.domain.card.service.CardService;
@@ -36,9 +37,18 @@ public class CardController {
                         .cardId(card.getCardId())
                         .cardName(card.getCardName())
                         .cardCompany(card.getCardCompany())
+                        .debt(card.getDebt())
                         .build())
                 .toList();
         return ResponseEntity.ok(cards);
+    }
+
+    @PatchMapping("/card/pay/{cardId}")
+    public ResponseEntity<?> payCard(@AuthenticationPrincipal String id,
+                                     @PathVariable Long cardId,
+                                     @RequestBody PayCardRequestDto payDto) {
+        cardService.payCard(id, cardId, payDto.getAccountId(), payDto.getAmount());
+        return ResponseEntity.ok("납부 완료");
     }
 
     @DeleteMapping("/card/delete/{cardId}")

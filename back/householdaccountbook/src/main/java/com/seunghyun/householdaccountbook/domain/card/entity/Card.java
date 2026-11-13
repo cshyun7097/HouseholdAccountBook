@@ -22,15 +22,20 @@ public class Card {
     @Column(nullable = false)
     private String cardCompany;
 
+    // 카드로 쓴 금액 중 아직 납부하지 않은 금액
+    @Column(nullable = false)
+    private Long debt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "memberId", nullable = false)
     private Member member;
 
     @Builder
-    public Card(Long cardId, String cardName, String cardCompany, Member member) {
+    public Card(Long cardId, String cardName, String cardCompany, Long debt, Member member) {
         this.cardId = cardId;
         this.cardName = cardName;
         this.cardCompany = cardCompany;
+        this.debt = debt;
         this.member = member;
     }
 }

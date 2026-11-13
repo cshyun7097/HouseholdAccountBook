@@ -22,8 +22,12 @@ public interface AccountBookService {
 
     Page<AccountBook> getAccountBooksByAccountAndDate(String id, Long accountId, LocalDate startDate, LocalDate endDate, int page);
 
-    // accountId, startDate/endDate는 null이면 조건에서 뺀다
-    Page<AccountBook> getAccountBooksByCategories(String id, List<Long> categoryIds, Long accountId, LocalDate startDate, LocalDate endDate, int page);
+    Page<AccountBook> getAccountBooksByCard(String id, Long cardId, int page);
+
+    Page<AccountBook> getAccountBooksByCardAndDate(String id, Long cardId, LocalDate startDate, LocalDate endDate, int page);
+
+    // accountId, cardId, startDate/endDate는 null이면 조건에서 뺀다 (accountId와 cardId는 하나만)
+    Page<AccountBook> getAccountBooksByCategories(String id, List<Long> categoryIds, Long accountId, Long cardId, LocalDate startDate, LocalDate endDate, int page);
 
     void updateAccountBook(String id, Long accountBookId, Long categoryId, String content, Long price, AccountBookType type);
 

@@ -11,4 +11,6 @@ public interface CardService {
     List<Card> getCards(String id);
 
     void deleteCard(String id, Long cardId);
+
+    void payCard(String id, Long cardId, Long accountId, Long amount);
 }

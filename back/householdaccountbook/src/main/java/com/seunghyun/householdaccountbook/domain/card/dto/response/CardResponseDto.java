@@ -9,4 +9,5 @@ public class CardResponseDto {
     private Long cardId;
     private String cardName;
     private String cardCompany;
+    private Long debt;
 }

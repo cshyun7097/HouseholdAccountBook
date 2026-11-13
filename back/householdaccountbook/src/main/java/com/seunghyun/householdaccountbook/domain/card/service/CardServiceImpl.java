@@ -1,5 +1,6 @@
 package com.seunghyun.householdaccountbook.domain.card.service;
 
+import com.seunghyun.householdaccountbook.domain.account.repository.AccountRepository;
 import com.seunghyun.householdaccountbook.domain.accountbook.repository.AccountBookRepository;
 import com.seunghyun.householdaccountbook.domain.card.entity.Card;
 import com.seunghyun.householdaccountbook.domain.card.repository.CardRepository;
@@ -21,6 +22,7 @@ public class CardServiceImpl implements CardService {
     private final CardRepository cardRepository;
     private final MemberRepository memberRepository;
     private final AccountBookRepository accountBookRepository;
+    private final AccountRepository accountRepository;
 
     @Override
     @Transactional
@@ -34,6 +36,7 @@ public class CardServiceImpl implements CardService {
         if (member.getWithDrawalStatus() != WithDrawalStatus.ACTIVE) {
             throw new IllegalArgumentException("탈퇴한 회원입니다.");
         }
+        card.setDebt(0L);
         card.setMember(member);
         cardRepository.save(card);
     }
@@ -53,6 +56,27 @@ public class CardServiceImpl implements CardService {
             throw new IllegalArgumentException("가계부 내역이 있는 카드는 삭제할 수 없습니다.");
         }
         cardRepository.delete(card);
+    }
+
+    @Override
+    @Transactional
+    public void payCard(String id, Long cardId, Long accountId, Long amount) {
+        if (amount == null || amount <= 0) {
+            throw new IllegalArgumentException("납부 금액은 0보다 커야 합니다.");
+        }
+        // 카드와 통장 모두 본인 것인지 확인해서 남의 카드/통장으로 납부하는 것을 막는다
+        cardRepository.findByCardIdAndMember_Id(cardId, id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카드입니다."));
+        accountRepository.findByAccountIdAndMember_Id(accountId, id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 계좌입니다."));
+
+        if (cardRepository.payDebt(cardId, amount) == 0) {
+            throw new IllegalArgumentException("납부 금액이 부채보다 많습니다.");
+        }
+        // 잔액이 부족하면 예외로 롤백되어 부채도 그대로 남는다
+        if (accountRepository.changeBalance(accountId, -amount) == 0) {
+            throw new IllegalArgumentException("잔액이 부족합니다.");
+        }
     }
 
     private static boolean isBlank(String value) {

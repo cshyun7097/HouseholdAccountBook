@@ -31,7 +31,13 @@ public interface AccountBookRepository extends JpaRepository<AccountBook, Long> 
     @EntityGraph(attributePaths = "category")
     Page<AccountBook> findAllByMember_IdAndAccount_AccountIdAndDateBetween(String id, Long accountId, LocalDate startDate, LocalDate endDate, Pageable pageable);
 
-    // 카테고리 여러 개 선택 조회 (통장, 기간은 선택)
+    @EntityGraph(attributePaths = "category")
+    Page<AccountBook> findAllByMember_IdAndCard_CardId(String id, Long cardId, Pageable pageable);
+
+    @EntityGraph(attributePaths = "category")
+    Page<AccountBook> findAllByMember_IdAndCard_CardIdAndDateBetween(String id, Long cardId, LocalDate startDate, LocalDate endDate, Pageable pageable);
+
+    // 카테고리 여러 개 선택 조회 (통장/카드, 기간은 선택)
     @EntityGraph(attributePaths = "category")
     Page<AccountBook> findAllByMember_IdAndCategory_CategoryIdIn(String id, List<Long> categoryIds, Pageable pageable);
 
@@ -43,6 +49,12 @@ public interface AccountBookRepository extends JpaRepository<AccountBook, Long> 
 
     @EntityGraph(attributePaths = "category")
     Page<AccountBook> findAllByMember_IdAndCategory_CategoryIdInAndAccount_AccountIdAndDateBetween(String id, List<Long> categoryIds, Long accountId, LocalDate startDate, LocalDate endDate, Pageable pageable);
+
+    @EntityGraph(attributePaths = "category")
+    Page<AccountBook> findAllByMember_IdAndCategory_CategoryIdInAndCard_CardId(String id, List<Long> categoryIds, Long cardId, Pageable pageable);
+
+    @EntityGraph(attributePaths = "category")
+    Page<AccountBook> findAllByMember_IdAndCategory_CategoryIdInAndCard_CardIdAndDateBetween(String id, List<Long> categoryIds, Long cardId, LocalDate startDate, LocalDate endDate, Pageable pageable);
 
     Optional<AccountBook> findByAccountBookIdAndMember_Id(Long accountBookId, String id);
 

@@ -66,12 +66,13 @@ public class AccountBookServiceImpl implements AccountBookService {
         accountBook.setMember(member);
         accountBook.setCategory(category);
 
-        // 카드는 잔액이 없으므로 내역만 남긴다
+        // 카드는 잔액 대신 부채가 늘어난다 (지출이면 +, 환불 같은 수입이면 -)
         if (accountBook.getPaymentType() == PaymentType.CARD) {
             // 본인 카드만 조회해서 남의 카드로 등록하는 것을 막는다
             accountBook.setCard(cardRepository.findByCardIdAndMember_Id(cardId, id)
                     .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카드입니다.")));
             accountBookRepository.save(accountBook);
+            cardRepository.addDebt(cardId, -balanceEffect(accountBook.getType(), accountBook.getPrice()));
             return;
         }
 
@@ -109,9 +110,24 @@ public class AccountBookServiceImpl implements AccountBookService {
     }
 
     @Override
-    public Page<AccountBook> getAccountBooksByCategories(String id, List<Long> categoryIds, Long accountId, LocalDate startDate, LocalDate endDate, int page) {
+    public Page<AccountBook> getAccountBooksByCard(String id, Long cardId, int page) {
+        // 회원 조건을 같이 걸어서 남의 카드 내역은 조회되지 않는다
+        return accountBookRepository.findAllByMember_IdAndCard_CardId(id, cardId, PageRequest.of(page, PAGE_SIZE, SORT));
+    }
+
+    @Override
+    public Page<AccountBook> getAccountBooksByCardAndDate(String id, Long cardId, LocalDate startDate, LocalDate endDate, int page) {
+        validateRange(startDate, endDate);
+        return accountBookRepository.findAllByMember_IdAndCard_CardIdAndDateBetween(id, cardId, startDate, endDate, PageRequest.of(page, PAGE_SIZE, SORT));
+    }
+
+    @Override
+    public Page<AccountBook> getAccountBooksByCategories(String id, List<Long> categoryIds, Long accountId, Long cardId, LocalDate startDate, LocalDate endDate, int page) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             throw new IllegalArgumentException("카테고리를 하나 이상 선택해주세요.");
+        }
+        if (accountId != null && cardId != null) {
+            throw new IllegalArgumentException("통장과 카드는 하나만 선택해주세요.");
         }
         if ((startDate == null) != (endDate == null)) {
             throw new IllegalArgumentException("시작일과 종료일을 모두 선택해주세요.");
@@ -119,11 +135,17 @@ public class AccountBookServiceImpl implements AccountBookService {
         PageRequest pageable = PageRequest.of(page, PAGE_SIZE, SORT);
         // 회원 조건을 같이 걸어서 남의 카테고리/계좌 id를 넣어도 본인 내역만 조회된다
         if (startDate == null) {
+            if (cardId != null) {
+                return accountBookRepository.findAllByMember_IdAndCategory_CategoryIdInAndCard_CardId(id, categoryIds, cardId, pageable);
+            }
             return accountId == null
                     ? accountBookRepository.findAllByMember_IdAndCategory_CategoryIdIn(id, categoryIds, pageable)
                     : accountBookRepository.findAllByMember_IdAndCategory_CategoryIdInAndAccount_AccountId(id, categoryIds, accountId, pageable);
         }
         validateRange(startDate, endDate);
+        if (cardId != null) {
+            return accountBookRepository.findAllByMember_IdAndCategory_CategoryIdInAndCard_CardIdAndDateBetween(id, categoryIds, cardId, startDate, endDate, pageable);
+        }
         return accountId == null
                 ? accountBookRepository.findAllByMember_IdAndCategory_CategoryIdInAndDateBetween(id, categoryIds, startDate, endDate, pageable)
                 : accountBookRepository.findAllByMember_IdAndCategory_CategoryIdInAndAccount_AccountIdAndDateBetween(id, categoryIds, accountId, startDate, endDate, pageable);
@@ -141,8 +163,8 @@ public class AccountBookServiceImpl implements AccountBookService {
 
         // 기존 내역이 잔액에 준 영향과 수정 후 영향의 차이만큼만 반영한다
         long diff = balanceEffect(type, price) - balanceEffect(accountBook.getType(), accountBook.getPrice());
-        if (diff != 0 && accountBook.getAccount() != null) {
-            accountRepository.addBalance(accountBook.getAccount().getAccountId(), diff);
+        if (diff != 0) {
+            applyEffect(accountBook, diff);
         }
 
         accountBook.setCategory(category);
@@ -159,9 +181,7 @@ public class AccountBookServiceImpl implements AccountBookService {
 
         // 추가할 때 반영한 만큼 되돌린다
         // 이미 쓴 수입을 지우면 잔액이 음수가 될 수 있지만, 잘못 쓴 내역은 지울 수 있어야 한다
-        if (accountBook.getAccount() != null) {
-            accountRepository.addBalance(accountBook.getAccount().getAccountId(), -balanceEffect(accountBook.getType(), accountBook.getPrice()));
-        }
+        applyEffect(accountBook, -balanceEffect(accountBook.getType(), accountBook.getPrice()));
         accountBookRepository.delete(accountBook);
     }
 
@@ -175,6 +195,15 @@ public class AccountBookServiceImpl implements AccountBookService {
     // 수입이면 더하고 지출이면 뺀다
     private long balanceEffect(AccountBookType type, Long price) {
         return type == AccountBookType.INCOME ? price : -price;
+    }
+
+    // 통장이면 잔액에, 카드면 부채에 반대 부호로 반영한다
+    private void applyEffect(AccountBook accountBook, long effect) {
+        if (accountBook.getCard() != null) {
+            cardRepository.addDebt(accountBook.getCard().getCardId(), -effect);
+        } else {
+            accountRepository.addBalance(accountBook.getAccount().getAccountId(), effect);
+        }
     }
 
     private void changeBalance(Long accountId, long amount) {

@@ -75,15 +75,36 @@ public class AccountBookController {
         return ResponseEntity.ok(accountBooks);
     }
 
-    // 예: /accountbook/get/category?categoryIds=1,2&accountId=3&startDate=2026-11-01&endDate=2026-11-30
+    @GetMapping("/accountbook/get/card/{cardId}")
+    public ResponseEntity<?> getAccountBooksByCard(@AuthenticationPrincipal String id,
+                                                   @PathVariable Long cardId,
+                                                   @RequestParam(defaultValue = "0") int page) {
+        PagedModel<AccountBookResponseDto> accountBooks = new PagedModel<>(accountBookService.getAccountBooksByCard(id, cardId, page)
+                .map(this::toResponse));
+        return ResponseEntity.ok(accountBooks);
+    }
+
+    @GetMapping("/accountbook/get/card/{cardId}/date")
+    public ResponseEntity<?> getAccountBooksByCardAndDate(@AuthenticationPrincipal String id,
+                                                          @PathVariable Long cardId,
+                                                          @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                                                          @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+                                                          @RequestParam(defaultValue = "0") int page) {
+        PagedModel<AccountBookResponseDto> accountBooks = new PagedModel<>(accountBookService.getAccountBooksByCardAndDate(id, cardId, startDate, endDate, page)
+                .map(this::toResponse));
+        return ResponseEntity.ok(accountBooks);
+    }
+
+    // 예: /accountbook/get/category?categoryIds=1,2&accountId=3&startDate=2026-11-01&endDate=2026-11-30 (통장 대신 cardId=4도 가능)
     @GetMapping("/accountbook/get/category")
     public ResponseEntity<?> getAccountBooksByCategories(@AuthenticationPrincipal String id,
                                                         @RequestParam List<Long> categoryIds,
                                                         @RequestParam(required = false) Long accountId,
+                                                        @RequestParam(required = false) Long cardId,
                                                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
                                                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
                                                         @RequestParam(defaultValue = "0") int page) {
-        PagedModel<AccountBookResponseDto> accountBooks = new PagedModel<>(accountBookService.getAccountBooksByCategories(id, categoryIds, accountId, startDate, endDate, page)
+        PagedModel<AccountBookResponseDto> accountBooks = new PagedModel<>(accountBookService.getAccountBooksByCategories(id, categoryIds, accountId, cardId, startDate, endDate, page)
                 .map(this::toResponse));
         return ResponseEntity.ok(accountBooks);
     }
